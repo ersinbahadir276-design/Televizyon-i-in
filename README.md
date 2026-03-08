@@ -1,1 +1,165 @@
-# Televizyon-i-in
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Game Hub</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #111; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; }
+
+        /* --- MENU --- */
+        .tv-bar {
+            height: 60px;
+            background: #222;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid #007bff;
+            z-index: 10;
+        }
+
+        .status {
+            color: #fff; font-size: 14px; margin-right: auto;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .dot { width: 10px; height: 10px; background: red; border-radius: 50%; display: inline-block; }
+        .dot.active { background: #0f0; box-shadow: 0 0 10px #0f0; }
+
+        /* TV uyumlu buyuk butonlar */
+        .btn {
+            background: #333; color: white; border: 2px solid #555;
+            padding: 10px 20px; font-size: 16px; font-weight: bold;
+            margin-left: 10px; cursor: pointer; border-radius: 8px;
+            transition: 0.2s;
+        }
+        .btn:hover, .btn:focus { 
+            background: #007bff; border-color: #fff; outline: none; transform: scale(1.05);
+        }
+
+        /* --- OYUN ALANI --- */
+        .screen {
+            flex: 1; position: relative; background: #000;
+        }
+        iframe {
+            width: 100%; height: 100%; border: none; display: block;
+        }
+
+        /* Kumanda Bilgisi */
+        .info {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 20px;
+            font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tv-bar" id="menu">
+        <div class="status">
+            <span class="dot" id="focusDot"></span>
+            <span id="statusText">TV Modu: Pasif</span>
+        </div>
+        
+        <!-- Kumanda ile kolay secilsin diye tab-index ekledim -->
+        <button class="btn" onclick="startTVMode()" tabindex="1">BAŞLAT (Kumanda)</button>
+        <button class="btn" onclick="loadSite('translate')" tabindex="2">MEB Engel Çöz</button>
+        <button class="btn" onclick="toggleFS()" tabindex="3">Tam Ekran</button>
+    </div>
+
+    <div class="screen">
+        <iframe id="game" src="https://moomoo.io" allowfullscreen></iframe>
+        <div class="info" id="infoBox">Kumanda Tuşu Algılandı!</div>
+    </div>
+
+    <script>
+        const frame = document.getElementById('game');
+        const dot = document.getElementById('focusDot');
+        const txt = document.getElementById('statusText');
+        const info = document.getElementById('infoBox');
+        let tvMode = false;
+
+        // Oyunu baslat ve TV moduna gec
+        function startTVMode() {
+            tvMode = true;
+            dot.classList.add('active');
+            txt.textContent = "TV Modu: AKTİF (Tuşlar Oyuna Gidiyor)";
+            
+            // Odagi iframe'e ver
+            frame.focus();
+            
+            // Kullaniciya bilgi ver
+            showInfo("TV Modu Açık. Kumanda Yön Tuşlarını Kullanın.");
+        }
+
+        function loadSite(mode) {
+            if(mode === 'translate') {
+                frame.src = "https://translate.google.com/translate?sl=en&tl=tr&hl=tr&u=https://moomoo.io&client=webapp";
+                showInfo("Engel Çözücü Yüklendi...");
+            }
+        }
+
+        function toggleFS() {
+            if(!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('menu').style.display = 'none'; // Menuyu gizle tam ekran olsun
+            } else {
+                document.exitFullscreen();
+                document.getElementById('menu').style.display = 'flex';
+            }
+        }
+
+        function showInfo(msg) {
+            info.textContent = msg;
+            info.style.opacity = 1;
+            setTimeout(() => { info.style.opacity = 0; }, 2000);
+        }
+
+        // --- KUMANDA TUSLARI VE ODAK YONETIMI ---
+        
+        // Ekrana tiklanirsa tekrar iframe'i odakla (oyun kontrolu kaybolmasin)
+        document.addEventListener('click', () => {
+            if(tvMode) frame.focus();
+        });
+
+        // Klavye / Kumanda olaylari
+        window.addEventListener('keydown', (e) => {
+            if(!tvMode) return;
+
+            // Kumanda Tus Kodlari (Genel Standart)
+            // 37: Sol, 38: Yukari, 39: Sag, 40: Asagi, 13: OK/Enter
+            const key = e.keyCode;
+
+            if([37, 38, 39, 40, 13, 32].includes(key)) {
+                // Varsayilan davranisi (kaydirmayi/secimi) engelle
+                e.preventDefault();
+                
+                // Odagi israrla oyunda tut
+                frame.focus();
+                
+                // Bilgi goster (Test icin)
+                // showInfo("Tuş Basıldı: " + key);
+                
+                // NOT: Cross-origin guvenligi nedeniyle tuslari "inject" edemiyoruz.
+                // Ama iframe odakli oldugu ve scroll engellendigi icin 
+                // tarayici tusu direkt iframe'e iletir. Oyun destekliyorsa calisir.
+            }
+            
+            // Tam ekrandan cikmak icin ESC veya Geri tusu
+            if(key === 27 || key === 461 || key === 10009) { // 461, 10009 TV 'Back' tuslari
+                document.exitFullscreen();
+                document.getElementById('menu').style.display = 'flex';
+            }
+        });
+
+        // Her 2 saniyede bir odagi kontrol et ve oyuna ver
+        setInterval(() => {
+            if(tvMode && document.activeElement !== frame) {
+                frame.focus();
+                console.log("Odak oyuna geri verildi.");
+            }
+        }, 3000);
+
+    </script>
+</body>
+</html>
