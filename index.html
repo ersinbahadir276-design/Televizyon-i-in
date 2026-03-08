@@ -3,126 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Game Console</title>
+    <title>TV Pro Console</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-        body { background: #000; height: 100vh; width: 100vw; font-family: sans-serif; }
+        body { background: #000; height: 100vh; font-family: 'Segoe UI', sans-serif; }
 
-        /* --- OYUN ALANI --- */
-        #game-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
+        /* Oyun Alani */
+        #game-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
         }
-        iframe {
-            width: 100%; height: 100%; border: none; display: block;
-        }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* --- MENU (Oyun Baslayinca Gizlenir) --- */
-        #menu-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 10;
+        /* HUD - Sanal Tus Gostergesi */
+        #hud-layer {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 10;
+            background: rgba(0, 0, 0, 0.6); padding: 10px; border-radius: 15px;
+            pointer-events: none; /* Tiklamayi engelle, sadece gorsel */
         }
 
-        h1 { color: white; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
-
-        .btn {
-            background: #e74c3c; color: white;
-            padding: 20px 40px; font-size: 24px; font-weight: bold;
-            border: 4px solid #c0392b; border-radius: 10px;
-            cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
-            transition: 0.2s;
-            margin-bottom: 10px;
+        .key {
+            width: 40px; height: 40px;
+            background: #222; border: 2px solid #444; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; border-radius: 8px; font-size: 18px;
+            box-shadow: 0 4px 0 #000;
         }
-        .btn:hover, .btn:focus {
-            background: #ff5e57; transform: scale(1.1);
-            outline: none; box-shadow: 0 0 40px rgba(255, 94, 87, 0.8);
+        
+        .key.active {
+            background: #2ecc71; border-color: #27ae60;
+            transform: translateY(4px); box-shadow: 0 0 0 #000;
         }
 
-        .info { color: #aaa; margin-top: 15px; font-size: 14px; max-width: 600px; text-align: center; }
+        /* Bilgi Mesaji */
+        .info {
+            position: absolute; top: 10px; right: 20px; z-index: 10;
+            color: rgba(255, 255, 255, 0.5); font-size: 12px; text-align: right;
+            pointer-events: none;
+        }
 
-        /* --- GIZLI MOD --- */
-        .hidden { display: none !important; }
+        /* Auto Aim Uyarisi */
+        .warning {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 0, 0, 0.8); color: white; padding: 20px;
+            border-radius: 10px; text-align: center; z-index: 20;
+            display: none; /* Baslangicta gizli */
+        }
     </style>
 </head>
 <body>
 
-    <!-- Oyun Buraya Yuklenir -->
-    <div id="game-container">
-        <!-- 
-           sandbox ozellikleri kaldirildi, mouse kilidi icin tam yetki verildi.
-           allow="pointer-lock" cok onemli.
-        -->
-        <iframe id="gameFrame" 
-            src=""
-            allow="autoplay; fullscreen; pointer-lock; microphone; camera; midi; geolocation; gyroscope; magnetometer; accelerometer"
-            allowfullscreen>
-        </iframe>
+    <div id="game-layer">
+        <iframe id="game" src="https://moomoo.io" allowfullscreen></iframe>
     </div>
 
-    <!-- Baslangic Menusu -->
-    <div id="menu-overlay">
-        <h1>TV Oyun Konsolu</h1>
-        <button class="btn" onclick="startGame()">OYUNU BAŞLAT</button>
-        <p class="info">
-            Başlat'a bastıktan sonra Mouse/Ok kaybolacak.<br>
-            Kumanda tuşları direkt oyuna gidecek.<br>
-            Çıkmak için kumandadan 'Geri' tuşuna basılı tutun.
-        </p>
+    <div class="info">
+        TV MODU AKTİF<br>
+        1-9 Tuşları: Eşya Seçimi<br>
+        OK Tuşu: Saldırı / Seçim
+    </div>
+
+    <!-- Sanal Tuslar (Gorsel) -->
+    <div id="hud-layer">
+        <div class="key" id="k1">1</div>
+        <div class="key" id="k2">2</div>
+        <div class="key" id="k3">3</div>
+        <div class="key" id="k4">4</div>
+        <div class="key" id="k5">5</div>
+        <div class="key" id="k6">6</div>
+        <div class="key" id="k7">7</div>
+        <div class="key" id="k8">8</div>
+        <div class="key" id="k9">9</div>
+    </div>
+
+    <!-- Hile Uyarisi -->
+    <div id="aim-msg" class="warning">
+        <h3>OTOMATİK KİLİTLEME HAKKINDA</h3>
+        <p>Tarayıcı güvenliği nedeniyle dışarıdan "Aim Hack" yapılamaz.</p>
+        <p>Lütfen oyun içindeki <b>Ayarlar > Auto Attack</b> seçeneğini açın.</p>
+        <button onclick="closeMsg()" style="padding:10px 20px; margin-top:10px; cursor:pointer;">ANLADIM</button>
     </div>
 
     <script>
-        const frame = document.getElementById('gameFrame');
-        const menu = document.getElementById('menu-overlay');
-
-        function startGame() {
-            // 1. Oyunu Yukle
-            // Google Translate hilesi olmadan direkt yukluyoruz ki tuslar karismasin
-            // Eger engel varsa translate linkini geri koyabiliriz.
-            frame.src = "https://moomoo.io"; 
-
-            // 2. Menuyu Gizle
-            menu.classList.add('hidden');
-
-            // 3. TAM EKRAN ve MOUSE KILITLEME (Pointer Lock)
-            // Bu islem TV tarayicisinin "Sanal Mouse"unu oldurur.
-            document.documentElement.requestFullscreen().then(() => {
-                // Tam ekrana gectikten sonra mouse'u kilitlemeyi dene
-                // Not: iframe icine odaklandigi icin iframe kendi pointer lock'ini isteyebilir.
-                frame.focus();
-            }).catch(err => {
-                console.log("Tam ekran hatasi:", err);
-                frame.focus(); // Tam ekran olmazsa bile odakla
-            });
+        const frame = document.getElementById('game');
+        const keys = {};
+        
+        // 1'den 9'a kadar elementleri onbellege al
+        for(let i=1; i<=9; i++) {
+            keys[i] = document.getElementById('k'+i);
         }
 
-        // Mouse/Ok tusu ekrandan kacarsa geri yakala
-        document.body.addEventListener('click', () => {
-            if(menu.classList.contains('hidden')) {
+        function closeMsg() {
+            document.getElementById('aim-msg').style.display = 'none';
+            frame.focus();
+        }
+
+        // Baslangicta Aim uyarisi ver (Reis gorsun diye)
+        setTimeout(() => {
+            document.getElementById('aim-msg').style.display = 'block';
+        }, 1000);
+
+        // TV Kumanda Tuslarini Yakala (Gorsel Efekt Icin)
+        window.addEventListener('keydown', (e) => {
+            const code = e.key; 
+            
+            // Eğer 1-9 arası bir tuşa basıldıysa
+            if (code >= '1' && code <= '9') {
+                // Tuşu parlat
+                const el = keys[code];
+                if(el) {
+                    el.classList.add('active');
+                    setTimeout(() => el.classList.remove('active'), 200);
+                }
+            }
+
+            // Odak her zaman oyunda kalsın
+            if(document.activeElement !== frame) {
                 frame.focus();
             }
         });
 
-        // Eger oyun "Mouse Goster" derse veya pointer lock bozulursa
-        // tekrar odaklamaya calis.
+        // Surekli odagi kontrol et
         setInterval(() => {
-            if(menu.classList.contains('hidden') && document.activeElement !== frame) {
+            if(document.getElementById('aim-msg').style.display === 'none') {
                 frame.focus();
             }
         }, 2000);
-
-        // Kumanda Geri Tusu Yakalama (Menu'yu geri getir)
-        window.addEventListener('keydown', (e) => {
-            // ESC veya TV Geri Tusu
-            if(e.keyCode === 27 || e.keyCode === 461 || e.keyCode === 10009) {
-                document.exitFullscreen();
-                menu.classList.remove('hidden');
-                frame.src = ""; // Oyunu durdur
-            }
-        });
     </script>
 </body>
 </html>
