@@ -3,144 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moo-TV LEGENDARY</title>
+    <title>Moo-TV Online</title>
     <style>
-        /* TEMEL AYARLAR */
         * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; user-select: none; }
-        body { background: #b6db66; font-family: 'Segoe UI', sans-serif; }
+        body { background: #1a1a2e; font-family: 'Segoe UI', sans-serif; }
         canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
 
-        /* ARAYUZ KATMANI */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-
-        /* UST BAR (Kaynaklar) */
-        .top-bar {
-            position: absolute; top: 20px; left: 20px;
-            display: flex; gap: 15px; pointer-events: auto;
+        /* ANA MENU */
+        #main-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 100;
         }
-        .res-box {
-            background: rgba(0,0,0,0.4); padding: 8px 15px; border-radius: 20px;
-            color: white; font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 8px;
-            border: 2px solid rgba(0,0,0,0.2);
+        .menu-title {
+            font-size: 80px; color: #fff; font-weight: bold;
+            text-shadow: 0 0 30px #0f0, 0 0 60px #0f0;
+            margin-bottom: 20px;
         }
-        .icon { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); }
-
-        /* ENVANTER (Silah / Yemek) */
-        #inventory {
-            position: absolute; bottom: 20px; left: 20px;
-            display: flex; gap: 10px; pointer-events: auto;
+        .menu-subtitle { color: #aaa; font-size: 18px; margin-bottom: 40px; }
+        .menu-input {
+            width: 300px; padding: 15px 20px; font-size: 20px;
+            border: 3px solid #0f0; background: rgba(0,0,0,0.5);
+            color: #fff; border-radius: 10px; text-align: center;
+            margin-bottom: 20px; outline: none;
         }
-        .inv-slot {
-            width: 70px; height: 70px; background: rgba(0,0,0,0.5); border: 4px solid #333;
-            border-radius: 12px; cursor: pointer; position: relative;
-            display: flex; align-items: center; justify-content: center;
-            transition: 0.1s;
+        .menu-input:focus { border-color: #2ecc71; box-shadow: 0 0 20px rgba(46,204,113,0.5); }
+        .menu-btn {
+            width: 300px; padding: 20px; font-size: 24px; font-weight: bold;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white; border: none; border-radius: 10px; cursor: pointer;
+            transition: 0.3s; text-transform: uppercase;
         }
-        .inv-slot.active { border-color: #f1c40f; background: rgba(241, 196, 15, 0.2); transform: scale(1.1); }
-        .inv-key { position: absolute; top: 2px; left: 5px; color: #fff; font-size: 12px; font-weight: bold; }
-
-        /* INSAAT MENUSU */
-        #build-bar {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 8px; pointer-events: auto;
-        }
-        .build-item {
-            width: 60px; height: 60px; background: rgba(0,0,0,0.5); border: 3px solid #555;
-            border-radius: 10px; cursor: pointer; position: relative;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .build-item.selected { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
-        .cost { position: absolute; bottom: 2px; right: 2px; font-size: 10px; color: #fff; font-weight: bold; }
-
-        /* MARKET BUTONU */
-        #shop-btn {
+        .menu-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(46,204,113,0.8); }
+        .online-count {
             position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px;
+            color: #0f0; font-weight: bold;
+        }
+        .online-dot { display: inline-block; width: 10px; height: 10px; background: #0f0; border-radius: 50%; margin-right: 8px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* OYUN UI */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; }
+        .top-bar { position: absolute; top: 20px; left: 20px; display: flex; gap: 15px; pointer-events: auto; }
+        .res-box {
+            background: rgba(0,0,0,0.5); padding: 8px 15px; border-radius: 20px;
+            color: white; font-weight: bold; font-size: 16px; display: flex; align-items: center; gap: 8px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .icon { width: 24px; height: 24px; border-radius: 50%; }
+
+        /* OYUNCU LISTESI */
+        #player-list {
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px;
+            color: white; font-size: 14px; min-width: 150px;
+        }
+        .player-entry { display: flex; justify-content: space-between; padding: 3px 0; }
+        .player-name { color: #2ecc71; }
+
+        /* ENVANTER */
+        #inventory { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 10px; pointer-events: auto; }
+        .inv-slot {
+            width: 60px; height: 60px; background: rgba(0,0,0,0.6); border: 3px solid #444;
+            border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .inv-slot.active { border-color: #f1c40f; background: rgba(241,196,15,0.2); }
+        .inv-key { position: absolute; top: 2px; left: 5px; color: #fff; font-size: 11px; }
+
+        /* BUILD BAR */
+        #build-bar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
+        .build-item {
+            width: 55px; height: 55px; background: rgba(0,0,0,0.6); border: 3px solid #555;
+            border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .build-item.selected { border-color: #f1c40f; }
+        .cost { position: absolute; bottom: 2px; right: 3px; font-size: 9px; color: #fff; }
+
+        /* SHOP BTN */
+        #shop-btn {
+            position: absolute; top: 80px; right: 20px;
             background: #3498db; color: white; padding: 10px 20px;
-            border-radius: 8px; font-weight: bold; cursor: pointer;
-            border: 3px solid #2980b9; pointer-events: auto;
+            border-radius: 8px; font-weight: bold; cursor: pointer; pointer-events: auto;
         }
 
-        /* MARKET MENUSU (MODAL) */
+        /* SHOP MODAL */
         #shop-modal {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; height: 80%; background: rgba(0,0,0,0.9);
-            border-radius: 15px; border: 4px solid #3498db;
-            display: none; flex-direction: column; padding: 20px; pointer-events: auto; z-index: 50;
+            width: 85%; max-width: 800px; height: 70%; background: rgba(0,0,0,0.95);
+            border-radius: 15px; border: 3px solid #3498db; display: none;
+            flex-direction: column; padding: 20px; pointer-events: auto; z-index: 50;
         }
-        #shop-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px; overflow-y: auto; padding: 10px;
-        }
+        .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .shop-title { color: white; font-size: 24px; }
+        .close-btn { background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        #shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; overflow-y: auto; padding: 10px; }
         .shop-item {
-            background: #222; border: 2px solid #444; border-radius: 8px;
-            padding: 10px; text-align: center; color: white; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            background: #222; border: 2px solid #444; border-radius: 8px; padding: 10px;
+            text-align: center; color: white; cursor: pointer;
         }
-        .shop-item:hover { background: #333; border-color: #fff; }
-        .shop-item.equipped { border-color: #2ecc71; background: #145a32; }
-        .hat-preview { width: 50px; height: 50px; background: #ddd; border-radius: 50%; margin-bottom: 10px; position: relative; }
-        .close-shop {
-            align-self: flex-end; background: #c0392b; color: white; padding: 5px 15px;
-            border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px;
-        }
+        .shop-item:hover { border-color: #fff; }
+        .shop-item.owned { border-color: #2ecc71; }
+        .shop-item.equipped { background: #145a32; }
+        .hat-icon { width: 40px; height: 40px; border-radius: 50%; margin: 0 auto 8px; }
+        .shop-item button { margin-top: 5px; padding: 5px 10px; cursor: pointer; border: none; border-radius: 4px; }
 
-        /* BILDIRIM */
+        /* NOTIFY */
         .notify {
-            position: absolute; top: 30%; left: 50%; transform: translate(-50%);
-            background: rgba(0,0,0,0.7); color: white; padding: 10px 20px;
-            border-radius: 5px; opacity: 0; transition: 0.5s; pointer-events: none;
+            position: absolute; top: 25%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: white; padding: 10px 25px;
+            border-radius: 8px; opacity: 0; transition: 0.3s; pointer-events: none;
         }
-
     </style>
 </head>
 <body>
 
+    <!-- ANA MENU -->
+    <div id="main-menu">
+        <div class="online-count"><span class="online-dot"></span><span id="online-num">127</span> Oyuncu Çevrimiçi</div>
+        <h1 class="menu-title">MOO-TV</h1>
+        <p class="menu-subtitle">Hayatta Kal, İnşa Et, Fethet!</p>
+        <input type="text" class="menu-input" id="name-input" placeholder="İsmini Gir..." maxlength="15" value="">
+        <button class="menu-btn" onclick="startGame()">OYNA</button>
+    </div>
+
     <canvas id="gameCanvas"></canvas>
 
     <div id="ui-layer">
-        <!-- Kaynaklar & Gold -->
         <div class="top-bar">
-            <div class="res-box"><div class="icon" style="background:#a56d38"></div> <span id="wood-val">0</span></div>
-            <div class="res-box"><div class="icon" style="background:#7f8c8d"></div> <span id="stone-val">0</span></div>
-            <div class="res-box"><div class="icon" style="background:#e74c3c"></div> <span id="food-val">0</span></div>
-            <div class="res-box" style="border-color:#f1c40f; color:#f1c40f;">💰 <span id="gold-val">0</span></div>
+            <div class="res-box"><div class="icon" style="background:#a56d38"></div><span id="wood-val">0</span></div>
+            <div class="res-box"><div class="icon" style="background:#7f8c8d"></div><span id="stone-val">0</span></div>
+            <div class="res-box"><div class="icon" style="background:#e74c3c"></div><span id="food-val">0</span></div>
+            <div class="res-box" style="border-color:#f1c40f;color:#f1c40f;">💰<span id="gold-val">0</span></div>
         </div>
 
-        <!-- Market Butonu -->
-        <button id="shop-btn" onclick="toggleShop()">MARKET (Şapka)</button>
+        <div id="player-list">
+            <div style="border-bottom:1px solid #444; padding-bottom:5px; margin-bottom:5px;">Leaderboard</div>
+            <div id="leaderboard"></div>
+        </div>
 
-        <!-- Envanter -->
+        <button id="shop-btn" onclick="toggleShop()">MARKET</button>
+
         <div id="inventory">
-            <div class="inv-slot active" id="slot-0" onclick="selectSlot(0)">
-                <span class="inv-key">1</span>
-                <div style="width:30px; height:30px; background:#8e44ad; border-radius:4px;"></div> <!-- Balta -->
-            </div>
-            <div class="inv-slot" id="slot-1" onclick="selectSlot(1)">
-                <span class="inv-key">2</span>
-                <div style="width:30px; height:30px; background:#e74c3c; border-radius:50%;"></div> <!-- Elma -->
-            </div>
+            <div class="inv-slot active" id="slot-0" onclick="selectSlot(0)"><span class="inv-key">1</span><div style="width:25px;height:25px;background:#8e44ad;border-radius:3px;"></div></div>
+            <div class="inv-slot" id="slot-1" onclick="selectSlot(1)"><span class="inv-key">2</span><div style="width:20px;height:20px;background:#e74c3c;border-radius:50%;"></div></div>
         </div>
 
-        <!-- Insaat -->
         <div id="build-bar">
-            <div class="build-item" id="btn-wall" onclick="selectBuild('wall')">
-                <div style="width:25px;height:25px;background:#555;"></div> <span class="cost">10W</span>
-            </div>
-            <div class="build-item" id="btn-spike" onclick="selectBuild('spike')">
-                <div style="width:0;height:0;border:10px solid transparent;border-bottom:20px solid #777;"></div> <span class="cost">15S</span>
-            </div>
-            <div class="build-item" id="btn-trap" onclick="selectBuild('trap')">
-                <div style="width:25px;height:25px;border-radius:50%;border:3px solid #a56d38;"></div> <span class="cost">30W</span>
-            </div>
+            <div class="build-item" id="btn-wall" onclick="selectBuild('wall')"><div style="width:22px;height:22px;background:#555;"></div><span class="cost">10W</span></div>
+            <div class="build-item" id="btn-spike" onclick="selectBuild('spike')"><div style="width:0;height:0;border:8px solid transparent;border-bottom:16px solid #777;"></div><span class="cost">15S</span></div>
+            <div class="build-item" id="btn-trap" onclick="selectBuild('trap')"><div style="width:20px;height:20px;border-radius:50%;border:2px solid #a56d38;"></div><span class="cost">30W</span></div>
         </div>
 
-        <div id="notify" class="notify">Yetersiz Kaynak!</div>
+        <div id="notify" class="notify"></div>
     </div>
 
-    <!-- MARKET MODAL -->
+    <!-- SHOP -->
     <div id="shop-modal">
-        <button class="close-shop" onclick="toggleShop()">KAPAT X</button>
-        <div style="color:white; margin-bottom:10px;">Şapkanı Seç (Sadece 1 tane takılır)</div>
+        <div class="shop-header">
+            <span class="shop-title">ŞAPKA MARKETI</span>
+            <button class="close-btn" onclick="toggleShop()">KAPAT</button>
+        </div>
         <div id="shop-grid"></div>
     </div>
 
@@ -150,78 +174,104 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // --- OYUN SABITLERI ---
-        const mapSize = 5000; // Dev Harita
+        // AYARLAR
+        const mapSize = 6000;
+        let gameStarted = false;
+
+        // OYUNCU
         const player = {
-            x: 0, y: 0, angle: 0, radius: 25, speed: 4, baseSpeed: 4,
-            health: 100, maxHealth: 100,
-            wood: 0, stone: 0, food: 0, gold: 5000, score: 0,
-            activeSlot: 0, // 0: Weapon, 1: Food
-            hat: null, // Takili sapka ID
-            attacking: false, weaponAngle: 0,
-            eatCooldown: 0
+            name: "Oyuncu",
+            x: 0, y: 0, angle: 0, radius: 25, 
+            speed: 4, baseSpeed: 4,
+            health: 120, maxHealth: 120, // 120 HP
+            wood: 0, stone: 0, food: 5, gold: 0, score: 0,
+            activeSlot: 0, hat: null, ownedHats: [],
+            attacking: false, weaponAngle: 0, eatCooldown: 0
         };
         const cam = { x: 0, y: 0 };
-        
-        // --- HAT LISTESI (15 Adet) ---
+
+        // SAPKALAR (15 Adet)
         const hats = [
-            { id: 1, name: "Booster Hat", price: 1000, desc: "Hızını artırır", color: "#7f8c8d", type: "speed", val: 1.5 },
-            { id: 2, name: "Stone Helmet", price: 1500, desc: "Hasarı azaltır", color: "#95a5a6", type: "def", val: 0.8 },
-            { id: 3, name: "Apple Hat", price: 2000, desc: "Yavaşça can yeniler", color: "#e74c3c", type: "regen", val: 0.05 },
-            { id: 4, name: "Spike Gear", price: 2500, desc: "Sana vurana hasar ver", color: "#34495e", type: "thorns", val: 1 },
-            { id: 5, name: "Bushido", price: 3000, desc: "Daha hızlı vurursun", color: "#2c3e50", type: "atkSpd", val: 1.5 },
-            { id: 6, name: "Miner Hat", price: 3500, desc: "Taşlardan x2 al", color: "#f39c12", type: "stone", val: 2 },
-            { id: 7, name: "Lumberjack", price: 3500, desc: "Ağaçlardan x2 al", color: "#d35400", type: "wood", val: 2 },
-            { id: 8, name: "Soldier", price: 4000, desc: "Daha az geri tepme", color: "#27ae60", type: "stable", val: 0.5 },
-            { id: 9, name: "Empower", price: 5000, desc: "Daha çok hasar ver", color: "#8e44ad", type: "dmg", val: 1.3 },
-            { id: 10, name: "Scout Cap", price: 1000, desc: "Görüş alanı artar", color: "#16a085", type: "vision", val: 1.2 },
-            { id: 11, name: "Thief Gear", price: 6000, desc: "Daha çok altın", color: "#2c3e50", type: "gold", val: 1.5 },
-            { id: 12, name: "Medic", price: 4500, desc: "Yemekler x2 can verir", color: "#fff", type: "heal", val: 2 },
-            { id: 13, name: "Immunity", price: 8000, desc: "Zehir işlemez", color: "#e67e22", type: "immune", val: 1 },
-            { id: 14, name: "Winter Cap", price: 2000, desc: "Yavaşlamazsın", color: "#3498db", type: "snow", val: 1 },
-            { id: 15, name: "KING CROWN", price: 20000, desc: "HER ŞEY X2", color: "gold", type: "god", val: 2 }
+            { id: 1, name: "Hız Şapkası", price: 1000, desc: "+50% Hız", color: "#3498db", effect: { type: 'speed', val: 1.5 } },
+            { id: 2, name: "Taş Kask", price: 1500, desc: "-20% Hasar", color: "#95a5a6", effect: { type: 'def', val: 0.8 } },
+            { id: 3, name: "Can Şapkası", price: 2000, desc: "Otomatik İyileşme", color: "#e74c3c", effect: { type: 'regen', val: 0.1 } },
+            { id: 4, name: "Diken Zırh", price: 2500, desc: "Sana vurana hasar", color: "#34495e", effect: { type: 'thorns', val: 5 } },
+            { id: 5, name: "Savaşçı", price: 3000, desc: "Hızlı saldırı", color: "#c0392b", effect: { type: 'atkSpd', val: 1.5 } },
+            { id: 6, name: "Madenci", price: 3500, desc: "x2 Taş", color: "#f39c12", effect: { type: 'stone', val: 2 } },
+            { id: 7, name: "Oduncu", price: 3500, desc: "x2 Odun", color: "#d35400", effect: { type: 'wood', val: 2 } },
+            { id: 8, name: "Tank", price: 4000, desc: "Geri itilmezsin", color: "#27ae60", effect: { type: 'stable', val: 0.2 } },
+            { id: 9, name: "Güç", price: 5000, desc: "+30% Hasar", color: "#8e44ad", effect: { type: 'dmg', val: 1.3 } },
+            { id: 10, name: "Kaşif", price: 1000, desc: "Geniş görüş", color: "#16a085", effect: { type: 'vision', val: 1 } },
+            { id: 11, name: "Hırsız", price: 6000, desc: "+50% Altın", color: "#2c3e50", effect: { type: 'gold', val: 1.5 } },
+            { id: 12, name: "Doktor", price: 4500, desc: "x2 Yemek etkisi", color: "#ecf0f1", effect: { type: 'heal', val: 2 } },
+            { id: 13, name: "Bağışıklık", price: 8000, desc: "Zehir işlemez", color: "#e67e22", effect: { type: 'immune', val: 1 } },
+            { id: 14, name: "Kış Şapka", price: 2000, desc: "Yavaşlamazsın", color: "#5dade2", effect: { type: 'snow', val: 1 } },
+            { id: 15, name: "KRAL TACI", price: 25000, desc: "TÜM BONUSLAR!", color: "gold", effect: { type: 'god', val: 2 } }
         ];
 
         let objects = [];
         let enemies = [];
         let buildings = [];
         let particles = [];
-        
+        let fakePlayers = []; // Bot oyuncular (Multiplayer hissi)
+
         const keys = {};
         const mouse = { x: canvas.width/2, y: canvas.height/2, down: false };
         let buildMode = null;
         let shopOpen = false;
 
-        // --- OYUN BASLATMA ---
+        // Fake online sayi
+        document.getElementById('online-num').innerText = Math.floor(Math.random()*200) + 50;
+
+        // --- OYUNU BASLAT ---
+        function startGame() {
+            let name = document.getElementById('name-input').value.trim();
+            if(!name) name = "Oyuncu" + Math.floor(Math.random()*1000);
+            player.name = name;
+
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('ui-layer').style.display = 'block';
+            gameStarted = true;
+
+            init();
+            loop();
+        }
+
         function init() {
-            // Dev kaynaklar (Az sayida ama saglam)
-            for(let i=0; i<40; i++) spawnObj('tree');
-            for(let i=0; i<30; i++) spawnObj('rock');
-            for(let i=0; i<50; i++) spawnObj('bush'); // Elma calilari
-            
+            // Kaynaklar (Az ama saglik)
+            for(let i=0; i<50; i++) spawnObj('tree');
+            for(let i=0; i<40; i++) spawnObj('rock');
+            for(let i=0; i<60; i++) spawnObj('bush');
+
             // Moblar
-            for(let i=0; i<5; i++) spawnEnemy('wolf');
-            for(let i=0; i<5; i++) spawnEnemy('bull');
-            for(let i=0; i<5; i++) spawnEnemy('duck');
-            
+            for(let i=0; i<8; i++) spawnEnemy('wolf');
+            for(let i=0; i<6; i++) spawnEnemy('bull');
+            for(let i=0; i<10; i++) spawnEnemy('duck');
+            for(let i=0; i<2; i++) spawnEnemy('boss');
+
+            // Fake Players (Multiplayer hissi)
+            for(let i=0; i<5; i++) spawnFakePlayer();
+
             renderShop();
         }
 
         function spawnObj(type) {
-            let x, y, valid=false;
-            while(!valid) {
+            let x, y, valid = false, attempts = 0;
+            while(!valid && attempts < 50) {
                 x = rand(-mapSize/2, mapSize/2);
                 y = rand(-mapSize/2, mapSize/2);
                 valid = true;
-                if(getDist(x,y,player.x,player.y) < 300) valid=false;
-                for(let o of objects) if(getDist(x,y,o.x,o.y) < 100) valid=false;
+                if(getDist(x, y, player.x, player.y) < 200) valid = false;
+                for(let b of buildings) if(getDist(x, y, b.x, b.y) < 80) valid = false;
+                attempts++;
             }
             
-            // ZOR KIRILAN KAYNAKLAR
-            let hp = type==='tree'?1500 : (type==='rock'?2500 : 200); // 1500 HP agac!
-            let r = type==='tree'?rand(60,90) : (type==='rock'?rand(50,70) : 30);
-            
-            objects.push({ x, y, type, radius:r, health:hp, maxHealth:hp });
+            let hp, r;
+            if(type === 'tree') { hp = 500; r = rand(50, 80); }
+            else if(type === 'rock') { hp = 800; r = rand(40, 60); }
+            else { hp = 100; r = 25; } // Bush
+
+            objects.push({ x, y, type, radius: r, health: hp, maxHealth: hp });
         }
 
         function spawnEnemy(type) {
@@ -229,55 +279,71 @@
             do {
                 x = rand(-mapSize/2, mapSize/2);
                 y = rand(-mapSize/2, mapSize/2);
-                d = getDist(x,y,player.x,player.y);
-            } while(d < 1000);
+                d = getDist(x, y, player.x, player.y);
+            } while(d < 800);
 
-            let stats = {};
-            if(type === 'wolf') stats = { hp: 300, spd: 4.5, dmg: 10, r: 25, gold: 1000, col: '#7f8c8d' };
-            if(type === 'bull') stats = { hp: 800, spd: 2.5, dmg: 25, r: 35, gold: 2000, col: '#5d4037' };
-            if(type === 'boss') stats = { hp: 2500, spd: 2.0, dmg: 40, r: 60, gold: 5000, col: '#3e2723' };
-            if(type === 'duck') stats = { hp: 150, spd: 5.0, dmg: 0, r: 20, gold: 3000, col: '#f1c40f' }; // Kacar
+            let stats;
+            if(type === 'wolf') stats = { hp: 200, spd: 4, dmg: 20, r: 22, gold: 1000, col: '#888' };
+            else if(type === 'bull') stats = { hp: 600, spd: 2.5, dmg: 20, r: 35, gold: 2000, col: '#5d4037' };
+            else if(type === 'boss') stats = { hp: 1500, spd: 2, dmg: 20, r: 55, gold: 5000, col: '#3e2723' };
+            else stats = { hp: 100, spd: 5, dmg: 0, r: 18, gold: 3000, col: '#f1c40f' }; // Duck
 
             enemies.push({
                 x, y, type,
                 health: stats.hp, maxHealth: stats.hp,
                 speed: stats.spd, damage: stats.dmg,
                 radius: stats.r, gold: stats.gold, color: stats.col,
-                angle: 0, state: 'IDLE', wanderT: {x, y}
+                angle: 0, state: 'IDLE', wanderT: { x, y }
             });
+        }
+
+        function spawnFakePlayer() {
+            fakePlayers.push({
+                name: ["Pro_Gamer", "XxDeathxX", "Ahmet123", "Survivor", "BuildMaster", "NoobSlayer"][Math.floor(Math.random()*6)],
+                x: rand(-mapSize/2, mapSize/2),
+                y: rand(-mapSize/2, mapSize/2),
+                angle: Math.random() * Math.PI * 2,
+                score: Math.floor(Math.random() * 5000),
+                color: ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6'][Math.floor(Math.random()*5)]
+            });
+        }
+
+        // --- HAT EFEKTLERINI AL ---
+        function getHatEffect(type) {
+            if(!player.hat) return null;
+            let h = hats.find(x => x.id === player.hat);
+            if(h.effect.type === type) return h.effect.val;
+            if(h.effect.type === 'god') return 2; // God mode her seye bonus
+            return null;
         }
 
         // --- UPDATE ---
         function update() {
-            if(player.health <= 0) return;
-            if(shopOpen) return; // Shop acikken oyun durur (istege bagli)
+            if(!gameStarted || player.health <= 0) return;
+            if(shopOpen) return;
 
-            // Hat Etkileri (Speed)
-            let spd = player.baseSpeed;
-            if(player.hat && hats.find(h=>h.id===player.hat).type === 'speed') spd *= 1.5;
-            if(player.hat && hats.find(h=>h.id===player.hat).type === 'god') spd *= 2;
-            player.speed = spd;
+            // Hat: Regen
+            let regen = getHatEffect('regen');
+            if(regen) player.health = Math.min(player.maxHealth, player.health + regen);
 
-            // Regen Hat
-            if(player.hat && (hats.find(h=>h.id===player.hat).type === 'regen' || hats.find(h=>h.id===player.hat).type === 'god')) {
-                player.health = Math.min(player.maxHealth, player.health + 0.05);
-            }
+            // Hat: Speed
+            let spdMult = getHatEffect('speed') || 1;
+            player.speed = player.baseSpeed * spdMult;
 
             // Hareket
-            let mx=0, my=0;
-            if(keys['w']||keys['ArrowUp']) my-=1;
-            if(keys['s']||keys['ArrowDown']) my+=1;
-            if(keys['a']||keys['ArrowLeft']) mx-=1;
-            if(keys['d']||keys['ArrowRight']) mx+=1;
-            
-            // Normalize speed
-            if(mx!==0 || my!==0) {
+            let mx = 0, my = 0;
+            if(keys['w'] || keys['ArrowUp']) my -= 1;
+            if(keys['s'] || keys['ArrowDown']) my += 1;
+            if(keys['a'] || keys['ArrowLeft']) mx -= 1;
+            if(keys['d'] || keys['ArrowRight']) mx += 1;
+
+            if(mx !== 0 || my !== 0) {
                 let mag = Math.sqrt(mx*mx + my*my);
                 player.x += (mx/mag) * player.speed;
                 player.y += (my/mag) * player.speed;
             }
 
-            // Sinirlar & Carpismalar
+            // Sinirlar
             player.x = Math.max(-mapSize/2, Math.min(mapSize/2, player.x));
             player.y = Math.max(-mapSize/2, Math.min(mapSize/2, player.y));
             checkCollisions(player);
@@ -286,141 +352,109 @@
             cam.x = player.x - canvas.width/2;
             cam.y = player.y - canvas.height/2;
 
-            // Fare Acisi
-            const scX = canvas.width/2;
-            const scY = canvas.height/2;
-            player.angle = Math.atan2(mouse.y - scY, mouse.x - scX);
+            // Aci
+            player.angle = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2);
 
-            // ISLEM (Saldiri / Yeme / Insaat)
+            // Aksiyon
             if(mouse.down) {
-                if(buildMode) {
-                    placeBuild();
-                    mouse.down = false;
-                } 
-                else if(player.activeSlot === 0) { // Silah
-                    player.attacking = true;
-                }
-                else if(player.activeSlot === 1) { // Yemek (Elma)
-                    eatFood();
-                }
+                if(buildMode) { placeBuild(); mouse.down = false; }
+                else if(player.activeSlot === 0) player.attacking = true;
+                else if(player.activeSlot === 1) eatFood();
             } else {
                 player.attacking = false;
             }
 
             // Silah Animasyon
+            let atkSpd = getHatEffect('atkSpd') || 1;
             if(player.attacking) {
-                player.weaponAngle += 0.4;
+                player.weaponAngle += 0.35 * atkSpd;
                 if(player.weaponAngle > Math.PI) player.weaponAngle = 0;
-                // Vurus zamani
-                if(player.weaponAngle > 1.2 && player.weaponAngle < 1.6) checkHit();
+                if(player.weaponAngle > 1.0 && player.weaponAngle < 1.5) checkHit();
             } else {
                 player.weaponAngle = 0;
             }
 
-            // Cooldowns
             if(player.eatCooldown > 0) player.eatCooldown--;
 
-            // Mobs
             updateEnemies();
-            
-            // Particles
-            for(let i=particles.length-1; i>=0; i--) {
-                particles[i].life--;
-                particles[i].x += particles[i].vx;
-                particles[i].y += particles[i].vy;
-                if(particles[i].life <= 0) particles.splice(i,1);
-            }
-
-            // UI
-            document.getElementById('wood-val').innerText = player.wood;
-            document.getElementById('stone-val').innerText = player.stone;
-            document.getElementById('food-val').innerText = player.food;
-            document.getElementById('gold-val').innerText = player.gold;
+            updateFakePlayers();
+            updateParticles();
+            updateUI();
+            updateLeaderboard();
         }
 
         function eatFood() {
-            if(player.eatCooldown > 0) return;
-            if(player.food >= 1) {
-                player.food--;
-                let heal = 20;
-                // Medic sapkasi
-                if(player.hat && hats.find(h=>h.id===player.hat).type === 'heal') heal *= 2;
-                player.health = Math.min(player.maxHealth, player.health + heal);
-                spawnParticles(player.x, player.y, '#2ecc71', 5);
-                player.eatCooldown = 20; // Hizli yeme engeli
-            } else {
-                notify("Elma Yok!");
-            }
+            if(player.eatCooldown > 0 || player.food < 1) return;
+            player.food--;
+            let heal = 25;
+            let healMult = getHatEffect('heal') || 1;
+            player.health = Math.min(player.maxHealth, player.health + heal * healMult);
+            spawnParticles(player.x, player.y, '#2ecc71', 5);
+            player.eatCooldown = 30;
         }
 
         function checkHit() {
-            // Silah Ucu
-            let tipX = player.x + Math.cos(player.angle)*60;
-            let tipY = player.y + Math.sin(player.angle)*60;
+            let tipX = player.x + Math.cos(player.angle) * 60;
+            let tipY = player.y + Math.sin(player.angle) * 60;
 
-            // Hasar Carpani
-            let dmgMult = 1;
-            if(player.hat && hats.find(h=>h.id===player.hat).type === 'dmg') dmgMult = 1.3;
-            if(player.hat && hats.find(h=>h.id===player.hat).type === 'god') dmgMult = 2;
+            let dmgMult = getHatEffect('dmg') || 1;
             let dmg = 25 * dmgMult;
 
-            // Objeler
-            for(let i=objects.length-1; i>=0; i--) {
+            // OBJELER - HER VURUSTA 1 KAYNAK
+            for(let i = objects.length - 1; i >= 0; i--) {
                 let o = objects[i];
-                if(getDist(tipX, tipY, o.x, o.y) < o.radius + 30) {
+                if(getDist(tipX, tipY, o.x, o.y) < o.radius + 25) {
                     o.health -= dmg;
                     spawnParticles(o.x, o.y, '#fff', 2);
-                    // Titret
-                    o.x += Math.cos(player.angle)*3; o.y += Math.sin(player.angle)*3;
 
+                    // HER VURUSTA KAYNAK VER
+                    let mult = 1;
+                    if(o.type === 'tree') mult = getHatEffect('wood') || 1;
+                    if(o.type === 'rock') mult = getHatEffect('stone') || 1;
+
+                    if(o.type === 'tree') player.wood += Math.ceil(1 * mult);
+                    if(o.type === 'rock') player.stone += Math.ceil(1 * mult);
+                    if(o.type === 'bush') player.food += 1;
+
+                    // Obje oldu mu?
                     if(o.health <= 0) {
-                        // Bonuslar
-                        let dropMult = 1;
-                        if(o.type==='tree' && player.hat && hats.find(h=>h.id===player.hat).type==='wood') dropMult=2;
-                        if(o.type==='rock' && player.hat && hats.find(h=>h.id===player.hat).type==='stone') dropMult=2;
-                        
-                        if(o.type==='tree') player.wood += 20 * dropMult;
-                        if(o.type==='rock') player.stone += 15 * dropMult;
-                        if(o.type==='bush') player.food += 3 * dropMult; // Elma
-
-                        objects.splice(i,1);
-                        setTimeout(() => spawnObj(o.type), 10000); // 10 sn sonra dog
+                        // Bonus kaynak
+                        if(o.type === 'tree') player.wood += 5;
+                        if(o.type === 'rock') player.stone += 5;
+                        objects.splice(i, 1);
+                        setTimeout(() => spawnObj(o.type), 8000);
                     }
                     return;
                 }
             }
 
-            // Binalar (Kendi binani kirma)
-            for(let i=buildings.length-1; i>=0; i--) {
+            // BINALAR (Kendi binanı kır)
+            for(let i = buildings.length - 1; i >= 0; i--) {
                 let b = buildings[i];
-                if(getDist(tipX, tipY, b.x, b.y) < b.radius + 30) {
+                if(getDist(tipX, tipY, b.x, b.y) < b.radius + 25) {
                     b.health -= dmg;
                     spawnParticles(b.x, b.y, '#555', 2);
-                    if(b.health <= 0) buildings.splice(i,1);
+                    if(b.health <= 0) buildings.splice(i, 1);
                     return;
                 }
             }
 
-            // Moblar
-            for(let i=enemies.length-1; i>=0; i--) {
+            // MOBLAR
+            for(let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i];
                 if(getDist(tipX, tipY, e.x, e.y) < e.radius + 30) {
                     e.health -= dmg;
                     spawnParticles(e.x, e.y, 'red', 5);
-                    // Geri Tepme
-                    e.x += Math.cos(player.angle)*40;
-                    e.y += Math.sin(player.angle)*40;
+                    e.x += Math.cos(player.angle) * 30;
+                    e.y += Math.sin(player.angle) * 30;
 
                     if(e.health <= 0) {
-                        let g = e.gold;
-                        if(player.hat && hats.find(h=>h.id===player.hat).type==='gold') g *= 1.5;
+                        let goldMult = getHatEffect('gold') || 1;
+                        let g = Math.floor(e.gold * goldMult);
                         player.gold += g;
-                        notify("+" + g + " GOLD");
-                        
-                        // BOSS CIKMA SANS
-                        if(e.type==='bull' && Math.random()<0.3) spawnEnemy('boss');
-                        
-                        enemies.splice(i,1);
+                        player.score += g;
+                        notify("+" + g + " GOLD!");
+                        enemies.splice(i, 1);
                         setTimeout(() => spawnEnemy(e.type), 5000);
                     }
                     return;
@@ -431,21 +465,18 @@
         function updateEnemies() {
             enemies.forEach(e => {
                 let d = getDist(player.x, player.y, e.x, e.y);
-                
-                // ORDEK KACAR
+
                 if(e.type === 'duck') {
-                    if(d < 400) { // Yaklasirsan kacar
-                        e.angle = Math.atan2(e.y - player.y, e.x - player.x); // Ters aci
+                    if(d < 300) {
+                        e.angle = Math.atan2(e.y - player.y, e.x - player.x);
                         e.x += Math.cos(e.angle) * e.speed;
                         e.y += Math.sin(e.angle) * e.speed;
                     } else {
-                         // Idle
-                         e.x += (Math.random()-0.5)*2; e.y += (Math.random()-0.5)*2;
+                        e.x += (Math.random() - 0.5) * 2;
+                        e.y += (Math.random() - 0.5) * 2;
                     }
-                } 
-                // DIGERLERI SALDIRIR
-                else {
-                    if(d < 600) e.state = 'CHASE';
+                } else {
+                    if(d < 500) e.state = 'CHASE';
                     else e.state = 'IDLE';
 
                     if(e.state === 'CHASE') {
@@ -454,267 +485,461 @@
                         e.y += Math.sin(e.angle) * e.speed;
 
                         if(d < e.radius + player.radius + 5) {
-                            // Oyuncuya vur
-                            let dmg = e.damage;
-                            // Defans Hat
-                            if(player.hat && hats.find(h=>h.id===player.hat).type==='def') dmg *= 0.8;
+                            let dmg = e.damage; // 20 hasar
+                            let defMult = getHatEffect('def') || 1;
+                            dmg *= defMult;
                             player.health -= dmg;
                             spawnParticles(player.x, player.y, 'red', 2);
-                            
-                            // Thorns (Diken) Hat
-                            if(player.hat && hats.find(h=>h.id===player.hat).type==='thorns') {
-                                e.health -= 5;
-                            }
-                            
-                            if(player.health <= 0) location.reload();
+
+                            // Thorns
+                            let thorns = getHatEffect('thorns');
+                            if(thorns) e.health -= thorns;
+
+                            if(player.health <= 0) gameOver();
                         }
                     } else {
-                        // Gezinme
-                        if(Math.random()<0.02) e.angle = Math.random()*Math.PI*2;
-                        e.x += Math.cos(e.angle)*1; e.y += Math.sin(e.angle)*1;
+                        if(Math.random() < 0.02) e.angle = Math.random() * Math.PI * 2;
+                        e.x += Math.cos(e.angle);
+                        e.y += Math.sin(e.angle);
                     }
                 }
-                checkCollisions(e); // Moblar da agacin icinden gecemez
+                checkCollisions(e);
             });
         }
 
-        // --- RENDER ---
-        function draw() {
-            ctx.fillStyle = '#b6db66'; ctx.fillRect(0,0,canvas.width,canvas.height);
+        function updateFakePlayers() {
+            fakePlayers.forEach(fp => {
+                // Basit AI: Rastgele gezin
+                if(Math.random() < 0.02) fp.angle = Math.random() * Math.PI * 2;
+                fp.x += Math.cos(fp.angle) * 2;
+                fp.y += Math.sin(fp.angle) * 2;
+                fp.x = Math.max(-mapSize/2, Math.min(mapSize/2, fp.x));
+                fp.y = Math.max(-mapSize/2, Math.min(mapSize/2, fp.y));
+                // Skor artışı
+                if(Math.random() < 0.01) fp.score += Math.floor(Math.random() * 100);
+            });
+        }
+
+        function checkCollisions(ent) {
+            objects.forEach(o => {
+                if(o.type === 'bush') return;
+                let d = getDist(ent.x, ent.y, o.x, o.y);
+                let minD = ent.radius + o.radius;
+                if(d < minD) {
+                    let a = Math.atan2(ent.y - o.y, ent.x - o.x);
+                    let p = minD - d;
+                    ent.x += Math.cos(a) * p;
+                    ent.y += Math.sin(a) * p;
+                }
+            });
+            buildings.forEach(b => {
+                if(b.type === 'trap') return;
+                let d = getDist(ent.x, ent.y, b.x, b.y);
+                let minD = ent.radius + b.radius;
+                if(d < minD) {
+                    let a = Math.atan2(ent.y - b.y, ent.x - b.x);
+                    let p = minD - d;
+                    ent.x += Math.cos(a) * p;
+                    ent.y += Math.sin(a) * p;
+                    if(b.type === 'spike' && ent !== player) ent.health -= 1;
+                }
+            });
+        }
+
+        function updateParticles() {
+            for(let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function placeBuild() {
+            let costW = 0, costS = 0;
+            if(buildMode === 'wall') costW = 10;
+            if(buildMode === 'spike') costS = 15;
+            if(buildMode === 'trap') costW = 30;
+
+            if(player.wood >= costW && player.stone >= costS) {
+                player.wood -= costW;
+                player.stone -= costS;
+                let bx = player.x + Math.cos(player.angle) * 60;
+                let by = player.y + Math.sin(player.angle) * 60;
+                buildings.push({ x: bx, y: by, type: buildMode, health: 200, radius: 30 });
+                selectBuild(null);
+            } else {
+                notify("Yetersiz Kaynak!");
+            }
+        }
+
+        function selectBuild(t) {
+            buildMode = t;
+            document.querySelectorAll('.build-item').forEach(e => e.classList.remove('selected'));
+            if(t) document.getElementById('btn-' + t).classList.add('selected');
+        }
+
+        function selectSlot(s) {
+            player.activeSlot = s;
+            document.querySelectorAll('.inv-slot').forEach(e => e.classList.remove('active'));
+            document.getElementById('slot-' + s).classList.add('active');
+        }
+
+        function toggleShop() {
+            shopOpen = !shopOpen;
+            document.getElementById('shop-modal').style.display = shopOpen ? 'flex' : 'none';
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = '';
+            hats.forEach(h => {
+                let owned = player.ownedHats.includes(h.id);
+                let equipped = player.hat === h.id;
+                let div = document.createElement('div');
+                div.className = 'shop-item' + (owned ? ' owned' : '') + (equipped ? ' equipped' : '');
+                div.innerHTML = `
+                    <div class="hat-icon" style="background:${h.color}"></div>
+                    <div style="font-weight:bold;font-size:13px;">${h.name}</div>
+                    <div style="font-size:10px;color:#aaa;margin:5px 0;">${h.desc}</div>
+                    <div style="color:gold;font-weight:bold;">${owned ? 'SATIN ALINDI' : h.price + ' G'}</div>
+                    <button onclick="buyHat(${h.id})">${equipped ? 'ÇIKAR' : (owned ? 'TAK' : 'SATIN AL')}</button>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        window.buyHat = function(id) {
+            let h = hats.find(x => x.id === id);
             
+            if(player.hat === id) {
+                // Cikar
+                player.hat = null;
+            } else if(player.ownedHats.includes(id)) {
+                // Tak (Ucretsiz)
+                player.hat = id;
+            } else {
+                // Satin Al
+                if(player.gold >= h.price) {
+                    player.gold -= h.price; // GOLD DUSUR
+                    player.ownedHats.push(id);
+                    player.hat = id;
+                    notify(h.name + " Satın Alındı!");
+                } else {
+                    notify("Yetersiz Altın!");
+                }
+            }
+            renderShop();
+        };
+
+        function updateUI() {
+            document.getElementById('wood-val').innerText = player.wood;
+            document.getElementById('stone-val').innerText = player.stone;
+            document.getElementById('food-val').innerText = player.food;
+            document.getElementById('gold-val').innerText = player.gold;
+        }
+
+        function updateLeaderboard() {
+            let all = [...fakePlayers, { name: player.name, score: player.score }];
+            all.sort((a, b) => b.score - a.score);
+            let html = '';
+            all.slice(0, 5).forEach((p, i) => {
+                let isMe = p.name === player.name;
+                html += `<div class="player-entry"><span class="player-name" style="color:${isMe ? '#f1c40f' : '#2ecc71'}">${i+1}. ${p.name}</span><span>${p.score}</span></div>`;
+            });
+            document.getElementById('leaderboard').innerHTML = html;
+        }
+
+        function gameOver() {
+            alert("ÖLDÜN! Skorun: " + player.score);
+            location.reload();
+        }
+
+        function notify(msg) {
+            let n = document.getElementById('notify');
+            n.innerText = msg;
+            n.style.opacity = 1;
+            setTimeout(() => n.style.opacity = 0, 1500);
+        }
+
+        // --- DRAW ---
+        function draw() {
+            ctx.fillStyle = '#b6db66';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             // Grid
-            ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth=2; ctx.beginPath();
-            let gx=Math.floor(cam.x/100)*100, gy=Math.floor(cam.y/100)*100;
-            for(let x=gx; x<gx+canvas.width+100; x+=100) { ctx.moveTo(x-cam.x,0); ctx.lineTo(x-cam.x,canvas.height); }
-            for(let y=gy; y<gy+canvas.height+100; y+=100) { ctx.moveTo(0,y-cam.y); ctx.lineTo(canvas.width,y-cam.y); }
+            ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            let gx = Math.floor(cam.x / 100) * 100;
+            let gy = Math.floor(cam.y / 100) * 100;
+            for(let x = gx; x < gx + canvas.width + 100; x += 100) {
+                ctx.moveTo(x - cam.x, 0);
+                ctx.lineTo(x - cam.x, canvas.height);
+            }
+            for(let y = gy; y < gy + canvas.height + 100; y += 100) {
+                ctx.moveTo(0, y - cam.y);
+                ctx.lineTo(canvas.width, y - cam.y);
+            }
             ctx.stroke();
 
-            // Cisimler
+            // Sinir
+            ctx.strokeStyle = 'rgba(200,0,0,0.3)';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(-mapSize/2 - cam.x, -mapSize/2 - cam.y, mapSize, mapSize);
+
+            // Objeler
             objects.forEach(o => {
                 if(!inView(o)) return;
-                
                 if(o.type === 'tree') {
-                    // Yaprak katmanlari
                     drawCircle(o.x, o.y, o.radius, '#2ecc71');
-                    drawCircle(o.x, o.y, o.radius*0.7, '#27ae60', false);
+                    drawCircle(o.x, o.y, o.radius * 0.6, '#27ae60', false);
                 } else if(o.type === 'rock') {
                     drawCircle(o.x, o.y, o.radius, '#95a5a6');
-                    drawCircle(o.x+5, o.y-5, o.radius*0.4, '#7f8c8d', false);
-                } else { // Bush
+                    drawCircle(o.x + 5, o.y - 5, o.radius * 0.3, '#7f8c8d', false);
+                } else {
                     drawCircle(o.x, o.y, o.radius, '#27ae60');
-                    // Elmalar
-                    drawCircle(o.x-5, o.y-5, 5, 'red', false);
-                    drawCircle(o.x+8, o.y+2, 5, 'red', false);
+                    drawCircle(o.x - 5, o.y - 5, 5, '#e74c3c', false);
+                    drawCircle(o.x + 6, o.y + 3, 5, '#e74c3c', false);
                 }
-                
-                // Can bari (sadece hasar alinca)
+                // Can bari
                 if(o.health < o.maxHealth) {
-                   ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                   ctx.fillRect(o.x-cam.x-20, o.y-cam.y-o.radius-10, 40, 5);
-                   ctx.fillStyle = '#0f0';
-                   ctx.fillRect(o.x-cam.x-20, o.y-cam.y-o.radius-10, 40*(o.health/o.maxHealth), 5);
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(o.x - cam.x - 20, o.y - cam.y - o.radius - 10, 40, 5);
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.fillRect(o.x - cam.x - 20, o.y - cam.y - o.radius - 10, 40 * (o.health / o.maxHealth), 5);
                 }
             });
 
             // Binalar
             buildings.forEach(b => {
-                if(b.type==='wall') {
-                    ctx.fillStyle='#555'; ctx.fillRect(b.x-20-cam.x, b.y-20-cam.y, 40,40);
-                    ctx.strokeStyle='#222'; ctx.strokeRect(b.x-20-cam.x, b.y-20-cam.y, 40,40);
-                    // X
-                    ctx.beginPath(); ctx.moveTo(b.x-20-cam.x, b.y-20-cam.y); ctx.lineTo(b.x+20-cam.x, b.y+20-cam.y); ctx.stroke();
-                } else if(b.type==='spike') {
-                    ctx.fillStyle='#7f8c8d'; ctx.beginPath();
-                    for(let i=0;i<4;i++) ctx.lineTo(b.x-cam.x+Math.cos(i*1.57)*30, b.y-cam.y+Math.sin(i*1.57)*30);
-                    ctx.fill(); ctx.stroke();
+                if(b.type === 'wall') {
+                    ctx.fillStyle = '#555';
+                    ctx.fillRect(b.x - 20 - cam.x, b.y - 20 - cam.y, 40, 40);
+                    ctx.strokeStyle = '#333';
+                    ctx.strokeRect(b.x - 20 - cam.x, b.y - 20 - cam.y, 40, 40);
+                } else if(b.type === 'spike') {
+                    ctx.fillStyle = '#888';
+                    ctx.beginPath();
+                    for(let i = 0; i < 4; i++) {
+                        ctx.lineTo(b.x - cam.x + Math.cos(i * 1.57) * 30, b.y - cam.y + Math.sin(i * 1.57) * 30);
+                    }
+                    ctx.fill();
+                    ctx.stroke();
                 } else {
-                    drawCircle(b.x, b.y, 25, 'brown');
-                    drawCircle(b.x, b.y, 10, '#000');
+                    drawCircle(b.x, b.y, 25, '#8B4513');
+                    drawCircle(b.x, b.y, 10, '#000', false);
                 }
             });
 
             // Moblar
             enemies.forEach(e => {
                 if(!inView(e)) return;
-                ctx.save(); ctx.translate(e.x-cam.x, e.y-cam.y); ctx.rotate(e.angle);
-                
-                // Kulaklar/Boynuzlar
-                if(e.type==='wolf') {
-                    ctx.fillStyle=e.color;
-                    ctx.beginPath(); ctx.moveTo(10,-20); ctx.lineTo(25,-30); ctx.lineTo(20,-10); ctx.fill(); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(10,20); ctx.lineTo(25,30); ctx.lineTo(20,10); ctx.fill(); ctx.stroke();
-                } else if(e.type==='bull' || e.type==='boss') {
-                    ctx.fillStyle='#fff';
-                    ctx.beginPath(); ctx.moveTo(10,-10); ctx.lineTo(35,-25); ctx.lineTo(15,-5); ctx.fill(); ctx.stroke();
-                    ctx.beginPath(); ctx.moveTo(10,10); ctx.lineTo(35,25); ctx.lineTo(15,5); ctx.fill(); ctx.stroke();
+                ctx.save();
+                ctx.translate(e.x - cam.x, e.y - cam.y);
+                ctx.rotate(e.angle);
+
+                // Ozel detaylar
+                if(e.type === 'wolf') {
+                    ctx.fillStyle = e.color;
+                    ctx.beginPath();
+                    ctx.moveTo(5, -15);
+                    ctx.lineTo(15, -25);
+                    ctx.lineTo(15, -10);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(5, 15);
+                    ctx.lineTo(15, 25);
+                    ctx.lineTo(15, 10);
+                    ctx.fill();
+                } else if(e.type === 'bull' || e.type === 'boss') {
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.moveTo(5, -10);
+                    ctx.lineTo(30, -25);
+                    ctx.lineTo(10, -5);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.moveTo(5, 10);
+                    ctx.lineTo(30, 25);
+                    ctx.lineTo(10, 5);
+                    ctx.fill();
+                } else if(e.type === 'duck') {
+                    ctx.fillStyle = 'orange';
+                    ctx.beginPath();
+                    ctx.arc(15, 0, 8, 0, 6.28);
+                    ctx.fill();
                 }
 
-                // Govde
                 ctx.fillStyle = e.color;
-                ctx.beginPath(); ctx.arc(0,0,e.radius,0,6.28); ctx.fill();
-                ctx.lineWidth=3; ctx.strokeStyle='#222'; ctx.stroke();
-
-                // Gaga (Ordek)
-                if(e.type==='duck') {
-                    ctx.fillStyle='orange';
-                    ctx.beginPath(); ctx.arc(15, 0, 10, 0, 6.28); ctx.fill(); ctx.stroke();
-                }
-
+                ctx.beginPath();
+                ctx.arc(0, 0, e.radius, 0, 6.28);
+                ctx.fill();
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 2;
+                ctx.stroke();
                 ctx.restore();
+
+                // Can bari
+                ctx.fillStyle = '#333';
+                ctx.fillRect(e.x - cam.x - 20, e.y - cam.y - e.radius - 15, 40, 5);
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(e.x - cam.x - 20, e.y - cam.y - e.radius - 15, 40 * (e.health / e.maxHealth), 5);
+            });
+
+            // Fake Players
+            fakePlayers.forEach(fp => {
+                if(!inView(fp)) return;
+                ctx.save();
+                ctx.translate(fp.x - cam.x, fp.y - cam.y);
+                ctx.rotate(fp.angle);
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(18, 18, 8, 0, 6.28);
+                ctx.arc(18, -18, 8, 0, 6.28);
+                ctx.fill();
+                ctx.fillStyle = fp.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, 25, 0, 6.28);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+                // Isim
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(fp.name, fp.x - cam.x, fp.y - cam.y - 35);
             });
 
             // OYUNCU
-            ctx.save(); ctx.translate(canvas.width/2, canvas.height/2); ctx.rotate(player.angle);
-            
-            // Silah veya Yemek
             ctx.save();
-            if(player.activeSlot === 0) { // Balta
-                ctx.translate(20, 20); ctx.rotate(player.weaponAngle);
-                ctx.fillStyle='#8e44ad'; ctx.fillRect(0,-4,50,8);
-                ctx.fillStyle='gold'; ctx.beginPath(); ctx.arc(50,0,15,0,6.28); ctx.fill();
-            } else { // Elma
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(player.angle);
+
+            // Silah / Yemek
+            ctx.save();
+            if(player.activeSlot === 0) {
+                ctx.translate(20, 20);
+                ctx.rotate(player.weaponAngle);
+                ctx.fillStyle = '#8e44ad';
+                ctx.fillRect(0, -4, 50, 8);
+                ctx.fillStyle = 'gold';
+                ctx.beginPath();
+                ctx.arc(50, 0, 15, 0, 6.28);
+                ctx.fill();
+            } else {
                 ctx.translate(25, 15);
-                if(player.attacking) ctx.translate(5,0); // Yeme hareketi
-                ctx.fillStyle='red'; ctx.beginPath(); ctx.arc(0,0,10,0,6.28); ctx.fill();
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(0, 0, 10, 0, 6.28);
+                ctx.fill();
             }
             ctx.restore();
-            
-            // El
-            ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(20,-20,10,0,6.28); ctx.fill(); // Sol
-            ctx.beginPath(); ctx.arc(20,20,10,0,6.28); ctx.fill(); // Sag
+
+            // Eller
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(18, -18, 10, 0, 6.28);
+            ctx.arc(18, 18, 10, 0, 6.28);
+            ctx.fill();
 
             // Kafa
-            ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(0, 0, 25, 0, 6.28);
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
             ctx.stroke();
 
-            // SAPKA CIZIMI
+            // Sapka
             if(player.hat) {
-                let h = hats.find(x=>x.id===player.hat);
+                let h = hats.find(x => x.id === player.hat);
                 ctx.fillStyle = h.color;
-                
-                if(h.type==='speed') { // Kulaklik gibi
-                    ctx.fillRect(-10, -30, 20, 10); ctx.fillRect(-30, -10, 10, 20); ctx.fillRect(20, -10, 10, 20);
-                } 
-                else if(h.type==='thorns') { // Dikenli
-                    ctx.beginPath(); for(let i=0;i<6;i++) ctx.lineTo(Math.cos(i)*35, Math.sin(i)*35); ctx.fill();
-                }
-                else if(h.type==='god') { // Tac
-                    ctx.fillStyle='gold';
-                    ctx.beginPath(); ctx.moveTo(-20,-20); ctx.lineTo(-10,-35); ctx.lineTo(0,-20); ctx.lineTo(10,-35); ctx.lineTo(20,-20); ctx.lineTo(20,10); ctx.lineTo(-20,10); ctx.fill();
-                    ctx.strokeStyle='orange'; ctx.stroke();
-                }
-                else { // Normal Sapka
-                    ctx.beginPath(); ctx.arc(0,0,25,0,6.28); ctx.fill();
-                    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.arc(0,0,15,0,6.28); ctx.fill();
+                if(h.effect.type === 'god') {
+                    ctx.beginPath();
+                    ctx.moveTo(-15, -15);
+                    ctx.lineTo(-8, -30);
+                    ctx.lineTo(0, -18);
+                    ctx.lineTo(8, -30);
+                    ctx.lineTo(15, -15);
+                    ctx.lineTo(15, 5);
+                    ctx.lineTo(-15, 5);
+                    ctx.fill();
+                    ctx.strokeStyle = '#d4ac0d';
+                    ctx.stroke();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, -10, 18, Math.PI, 0);
+                    ctx.fill();
                 }
             }
             ctx.restore();
+
+            // Isim
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(player.name, canvas.width / 2, canvas.height / 2 - 45);
 
             // Particles
             particles.forEach(p => drawCircle(p.x, p.y, p.radius, p.color, false));
 
             // Can Bari
-            ctx.fillStyle='#333'; ctx.fillRect(canvas.width/2-30, canvas.height/2+40, 60, 8);
-            ctx.fillStyle='#2ecc71'; ctx.fillRect(canvas.width/2-30, canvas.height/2+40, 60*(player.health/player.maxHealth), 8);
+            ctx.fillStyle = '#333';
+            ctx.fillRect(canvas.width / 2 - 35, canvas.height / 2 + 40, 70, 8);
+            ctx.fillStyle = '#2ecc71';
+            ctx.fillRect(canvas.width / 2 - 35, canvas.height / 2 + 40, 70 * (player.health / player.maxHealth), 8);
         }
 
-        // --- YARDIMCILAR ---
-        function drawCircle(x,y,r,c,s=true) {
-            if(x-cam.x<-50 || x-cam.x>canvas.width+50) return;
-            ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x-cam.x, y-cam.y, r, 0, 6.28); ctx.fill();
-            if(s){ ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=3; ctx.stroke(); }
-        }
-        function checkCollisions(ent) {
-            objects.forEach(o => {
-                if(o.type==='bush') return;
-                let d = getDist(ent.x, ent.y, o.x, o.y);
-                if(d < ent.radius + o.radius) {
-                    let a = Math.atan2(ent.y-o.y, ent.x-o.x);
-                    let p = (ent.radius+o.radius) - d;
-                    ent.x += Math.cos(a)*p; ent.y += Math.sin(a)*p;
-                }
-            });
-            buildings.forEach(b => {
-                 if(b.type==='trap') return;
-                 let d = getDist(ent.x, ent.y, b.x, b.y);
-                 if(d < ent.radius + b.radius) {
-                    let a = Math.atan2(ent.y-b.y, ent.x-b.x);
-                    let p = (ent.radius+b.radius) - d;
-                    ent.x += Math.cos(a)*p; ent.y += Math.sin(a)*p;
-                    if(b.type==='spike' && ent!==player) ent.health-=0.5;
-                 }
-            });
-        }
-        function placeBuild() {
-            let costW=0, costS=0;
-            if(buildMode==='wall') costW=10;
-            if(buildMode==='spike') costS=15;
-            if(buildMode==='trap') costW=30;
-
-            if(player.wood>=costW && player.stone>=costS) {
-                player.wood-=costW; player.stone-=costS;
-                let bx = player.x + Math.cos(player.angle)*60;
-                let by = player.y + Math.sin(player.angle)*60;
-                buildings.push({x:bx, y:by, type:buildMode, health:200, radius:30});
-                selectBuild(null);
-            } else notify("Yetersiz Kaynak");
-        }
-        function selectBuild(t) { buildMode=t; document.querySelectorAll('.build-item').forEach(e=>e.classList.remove('selected')); if(t)document.getElementById('btn-'+t).classList.add('selected'); }
-        function selectSlot(s) { player.activeSlot=s; document.querySelectorAll('.inv-slot').forEach(e=>e.classList.remove('active')); document.getElementById('slot-'+s).classList.add('active'); }
-        function toggleShop() {
-            shopOpen = !shopOpen;
-            document.getElementById('shop-modal').style.display = shopOpen ? 'flex' : 'none';
-        }
-        function renderShop() {
-            const grid = document.getElementById('shop-grid');
-            grid.innerHTML = '';
-            hats.forEach(h => {
-                let div = document.createElement('div');
-                div.className = 'shop-item';
-                if(player.hat === h.id) div.classList.add('equipped');
-                div.innerHTML = `
-                    <div class="hat-preview" style="background:${h.color}"></div>
-                    <div style="font-weight:bold">${h.name}</div>
-                    <div style="font-size:10px; color:#aaa; margin:5px 0;">${h.desc}</div>
-                    <div style="color:gold; font-weight:bold;">${h.price} G</div>
-                    <button onclick="buyHat(${h.id})" style="margin-top:5px; cursor:pointer;">${player.hat===h.id ? 'TAKILI' : 'AL / TAK'}</button>
-                `;
-                grid.appendChild(div);
-            });
-        }
-        window.buyHat = function(id) {
-            let h = hats.find(x=>x.id===id);
-            if(player.hat === id) { // Cikar
-                player.hat = null;
-            } else {
-                if(player.gold >= h.price) { // Al
-                    player.hat = id;
-                    // Not: Bu basit versiyonda satin alinanlari kaydetmiyoruz, direkt takiyoruz.
-                    // Para dusmuyoruz ki degistirebilsin. Istersen burayi degistiririz.
-                } else notify("Yetersiz Altın!");
+        // --- HELPERS ---
+        function drawCircle(x, y, r, c, s = true) {
+            if(x - cam.x < -100 || x - cam.x > canvas.width + 100) return;
+            if(y - cam.y < -100 || y - cam.y > canvas.height + 100) return;
+            ctx.fillStyle = c;
+            ctx.beginPath();
+            ctx.arc(x - cam.x, y - cam.y, r, 0, 6.28);
+            ctx.fill();
+            if(s) {
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
             }
-            renderShop();
         }
-        function notify(msg) { let n=document.getElementById('notify'); n.innerText=msg; n.style.opacity=1; setTimeout(()=>n.style.opacity=0,1500); }
-        function spawnParticles(x,y,c,n) { for(let i=0;i<n;i++) particles.push({x,y,vx:(Math.random()-0.5)*10,vy:(Math.random()-0.5)*10,life:20,color:c,radius:3}); }
-        function rand(min,max){return Math.random()*(max-min)+min;}
-        function getDist(x1,y1,x2,y2){return Math.hypot(x2-x1,y2-y1);}
-        function inView(o){return o.x-cam.x>-100 && o.x-cam.x<canvas.width+100 && o.y-cam.y>-100 && o.y-cam.y<canvas.height+100;}
-        function loop(){ update(); draw(); requestAnimationFrame(loop); }
+        function spawnParticles(x, y, c, n) {
+            for(let i = 0; i < n; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 20, color: c, radius: 3
+                });
+            }
+        }
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+        function getDist(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
+        function inView(o) {
+            return o.x - cam.x > -150 && o.x - cam.x < canvas.width + 150 &&
+                   o.y - cam.y > -150 && o.y - cam.y < canvas.height + 150;
+        }
 
-        window.addEventListener('keydown', e=>{
-            keys[e.key]=true;
-            if(e.key==='1') selectSlot(0);
-            if(e.key==='2') selectSlot(1);
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // EVENTS
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if(e.key === '1') selectSlot(0);
+            if(e.key === '2') selectSlot(1);
+            if(e.key === 'Escape') { selectBuild(null); if(shopOpen) toggleShop(); }
         });
-        window.addEventListener('keyup', e=>keys[e.key]=false);
-        window.addEventListener('mousemove', e=>{mouse.x=e.clientX; mouse.y=e.clientY;});
-        window.addEventListener('mousedown', ()=>mouse.down=true);
-        window.addEventListener('mouseup', ()=>mouse.down=false);
-        window.addEventListener('resize', ()=>{canvas.width=innerWidth; canvas.height=innerHeight;});
-
-        init();
-        loop();
+        window.addEventListener('keyup', e => keys[e.key] = false);
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('mousedown', () => mouse.down = true);
+        window.addEventListener('mouseup', () => mouse.down = false);
+        window.addEventListener('resize', () => { canvas.width = innerWidth; canvas.height = innerHeight; });
     </script>
 </body>
 </html>
