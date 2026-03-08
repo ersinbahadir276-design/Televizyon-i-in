@@ -1,165 +1,128 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TV Game Hub</title>
+    <title>TV Game Console</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #111; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; }
-
-        /* --- MENU --- */
-        .tv-bar {
-            height: 60px;
-            background: #222;
-            display: flex;
-            align-items: center;
-            padding: 0 20px;
-            border-bottom: 2px solid #007bff;
-            z-index: 10;
-        }
-
-        .status {
-            color: #fff; font-size: 14px; margin-right: auto;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .dot { width: 10px; height: 10px; background: red; border-radius: 50%; display: inline-block; }
-        .dot.active { background: #0f0; box-shadow: 0 0 10px #0f0; }
-
-        /* TV uyumlu buyuk butonlar */
-        .btn {
-            background: #333; color: white; border: 2px solid #555;
-            padding: 10px 20px; font-size: 16px; font-weight: bold;
-            margin-left: 10px; cursor: pointer; border-radius: 8px;
-            transition: 0.2s;
-        }
-        .btn:hover, .btn:focus { 
-            background: #007bff; border-color: #fff; outline: none; transform: scale(1.05);
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
+        body { background: #000; height: 100vh; width: 100vw; font-family: sans-serif; }
 
         /* --- OYUN ALANI --- */
-        .screen {
-            flex: 1; position: relative; background: #000;
+        #game-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
         }
         iframe {
             width: 100%; height: 100%; border: none; display: block;
         }
 
-        /* Kumanda Bilgisi */
-        .info {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); color: #fff; padding: 10px 20px; border-radius: 20px;
-            font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.5s;
+        /* --- MENU (Oyun Baslayinca Gizlenir) --- */
+        #menu-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10;
         }
+
+        h1 { color: white; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; }
+
+        .btn {
+            background: #e74c3c; color: white;
+            padding: 20px 40px; font-size: 24px; font-weight: bold;
+            border: 4px solid #c0392b; border-radius: 10px;
+            cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
+            transition: 0.2s;
+            margin-bottom: 10px;
+        }
+        .btn:hover, .btn:focus {
+            background: #ff5e57; transform: scale(1.1);
+            outline: none; box-shadow: 0 0 40px rgba(255, 94, 87, 0.8);
+        }
+
+        .info { color: #aaa; margin-top: 15px; font-size: 14px; max-width: 600px; text-align: center; }
+
+        /* --- GIZLI MOD --- */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <div class="tv-bar" id="menu">
-        <div class="status">
-            <span class="dot" id="focusDot"></span>
-            <span id="statusText">TV Modu: Pasif</span>
-        </div>
-        
-        <!-- Kumanda ile kolay secilsin diye tab-index ekledim -->
-        <button class="btn" onclick="startTVMode()" tabindex="1">BAŞLAT (Kumanda)</button>
-        <button class="btn" onclick="loadSite('translate')" tabindex="2">MEB Engel Çöz</button>
-        <button class="btn" onclick="toggleFS()" tabindex="3">Tam Ekran</button>
+    <!-- Oyun Buraya Yuklenir -->
+    <div id="game-container">
+        <!-- 
+           sandbox ozellikleri kaldirildi, mouse kilidi icin tam yetki verildi.
+           allow="pointer-lock" cok onemli.
+        -->
+        <iframe id="gameFrame" 
+            src=""
+            allow="autoplay; fullscreen; pointer-lock; microphone; camera; midi; geolocation; gyroscope; magnetometer; accelerometer"
+            allowfullscreen>
+        </iframe>
     </div>
 
-    <div class="screen">
-        <iframe id="game" src="https://moomoo.io" allowfullscreen></iframe>
-        <div class="info" id="infoBox">Kumanda Tuşu Algılandı!</div>
+    <!-- Baslangic Menusu -->
+    <div id="menu-overlay">
+        <h1>TV Oyun Konsolu</h1>
+        <button class="btn" onclick="startGame()">OYUNU BAŞLAT</button>
+        <p class="info">
+            Başlat'a bastıktan sonra Mouse/Ok kaybolacak.<br>
+            Kumanda tuşları direkt oyuna gidecek.<br>
+            Çıkmak için kumandadan 'Geri' tuşuna basılı tutun.
+        </p>
     </div>
 
     <script>
-        const frame = document.getElementById('game');
-        const dot = document.getElementById('focusDot');
-        const txt = document.getElementById('statusText');
-        const info = document.getElementById('infoBox');
-        let tvMode = false;
+        const frame = document.getElementById('gameFrame');
+        const menu = document.getElementById('menu-overlay');
 
-        // Oyunu baslat ve TV moduna gec
-        function startTVMode() {
-            tvMode = true;
-            dot.classList.add('active');
-            txt.textContent = "TV Modu: AKTİF (Tuşlar Oyuna Gidiyor)";
-            
-            // Odagi iframe'e ver
-            frame.focus();
-            
-            // Kullaniciya bilgi ver
-            showInfo("TV Modu Açık. Kumanda Yön Tuşlarını Kullanın.");
-        }
+        function startGame() {
+            // 1. Oyunu Yukle
+            // Google Translate hilesi olmadan direkt yukluyoruz ki tuslar karismasin
+            // Eger engel varsa translate linkini geri koyabiliriz.
+            frame.src = "https://moomoo.io"; 
 
-        function loadSite(mode) {
-            if(mode === 'translate') {
-                frame.src = "https://translate.google.com/translate?sl=en&tl=tr&hl=tr&u=https://moomoo.io&client=webapp";
-                showInfo("Engel Çözücü Yüklendi...");
-            }
-        }
+            // 2. Menuyu Gizle
+            menu.classList.add('hidden');
 
-        function toggleFS() {
-            if(!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
-                document.getElementById('menu').style.display = 'none'; // Menuyu gizle tam ekran olsun
-            } else {
-                document.exitFullscreen();
-                document.getElementById('menu').style.display = 'flex';
-            }
-        }
-
-        function showInfo(msg) {
-            info.textContent = msg;
-            info.style.opacity = 1;
-            setTimeout(() => { info.style.opacity = 0; }, 2000);
-        }
-
-        // --- KUMANDA TUSLARI VE ODAK YONETIMI ---
-        
-        // Ekrana tiklanirsa tekrar iframe'i odakla (oyun kontrolu kaybolmasin)
-        document.addEventListener('click', () => {
-            if(tvMode) frame.focus();
-        });
-
-        // Klavye / Kumanda olaylari
-        window.addEventListener('keydown', (e) => {
-            if(!tvMode) return;
-
-            // Kumanda Tus Kodlari (Genel Standart)
-            // 37: Sol, 38: Yukari, 39: Sag, 40: Asagi, 13: OK/Enter
-            const key = e.keyCode;
-
-            if([37, 38, 39, 40, 13, 32].includes(key)) {
-                // Varsayilan davranisi (kaydirmayi/secimi) engelle
-                e.preventDefault();
-                
-                // Odagi israrla oyunda tut
+            // 3. TAM EKRAN ve MOUSE KILITLEME (Pointer Lock)
+            // Bu islem TV tarayicisinin "Sanal Mouse"unu oldurur.
+            document.documentElement.requestFullscreen().then(() => {
+                // Tam ekrana gectikten sonra mouse'u kilitlemeyi dene
+                // Not: iframe icine odaklandigi icin iframe kendi pointer lock'ini isteyebilir.
                 frame.focus();
-                
-                // Bilgi goster (Test icin)
-                // showInfo("Tuş Basıldı: " + key);
-                
-                // NOT: Cross-origin guvenligi nedeniyle tuslari "inject" edemiyoruz.
-                // Ama iframe odakli oldugu ve scroll engellendigi icin 
-                // tarayici tusu direkt iframe'e iletir. Oyun destekliyorsa calisir.
-            }
-            
-            // Tam ekrandan cikmak icin ESC veya Geri tusu
-            if(key === 27 || key === 461 || key === 10009) { // 461, 10009 TV 'Back' tuslari
-                document.exitFullscreen();
-                document.getElementById('menu').style.display = 'flex';
+            }).catch(err => {
+                console.log("Tam ekran hatasi:", err);
+                frame.focus(); // Tam ekran olmazsa bile odakla
+            });
+        }
+
+        // Mouse/Ok tusu ekrandan kacarsa geri yakala
+        document.body.addEventListener('click', () => {
+            if(menu.classList.contains('hidden')) {
+                frame.focus();
             }
         });
 
-        // Her 2 saniyede bir odagi kontrol et ve oyuna ver
+        // Eger oyun "Mouse Goster" derse veya pointer lock bozulursa
+        // tekrar odaklamaya calis.
         setInterval(() => {
-            if(tvMode && document.activeElement !== frame) {
+            if(menu.classList.contains('hidden') && document.activeElement !== frame) {
                 frame.focus();
-                console.log("Odak oyuna geri verildi.");
             }
-        }, 3000);
+        }, 2000);
 
+        // Kumanda Geri Tusu Yakalama (Menu'yu geri getir)
+        window.addEventListener('keydown', (e) => {
+            // ESC veya TV Geri Tusu
+            if(e.keyCode === 27 || e.keyCode === 461 || e.keyCode === 10009) {
+                document.exitFullscreen();
+                menu.classList.remove('hidden');
+                frame.src = ""; // Oyunu durdur
+            }
+        });
     </script>
 </body>
 </html>
