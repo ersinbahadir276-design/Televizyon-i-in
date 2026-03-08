@@ -3,36 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPIN BOT</title>
+    <title>Spin Bot Pro</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-        body { background: #000; height: 100vh; font-family: monospace; }
+        body { background: #000; height: 100vh; font-family: 'Segoe UI', sans-serif; }
 
+        /* Oyun Alani */
         #game-container {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
         }
         iframe { width: 100%; height: 100%; border: none; display: block; }
 
-        /* Durum Gostergesi */
-        #status-box {
-            position: absolute; top: 20px; left: 20px; z-index: 999;
-            background: rgba(0, 0, 0, 0.7); border: 2px solid #555;
-            color: #fff; padding: 15px; border-radius: 10px;
-            pointer-events: none; /* Tiklamayi engelle */
-            transition: 0.2s;
+        /* Spin Bot Butonu (Sag Ust) */
+        #spin-btn {
+            position: absolute; top: 15px; right: 15px; z-index: 1000;
+            background: rgba(255, 0, 0, 0.8); color: white;
+            border: 3px solid #ff0000; padding: 15px 30px;
+            font-size: 18px; font-weight: bold; border-radius: 50px;
+            cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 0 10px #ff0000;
+            transition: all 0.3s ease;
         }
-        
-        #status-box.active {
+
+        /* Bot Acik Hali (Yesil) */
+        #spin-btn.active {
+            background: rgba(0, 255, 0, 0.8);
             border-color: #0f0;
-            box-shadow: 0 0 15px #0f0;
+            box-shadow: 0 0 20px #0f0;
+            animation: pulse 1s infinite; /* Yanip sonme efekti */
         }
 
-        h1 { font-size: 18px; margin-bottom: 5px; }
-        p { font-size: 12px; color: #aaa; }
-        
-        .state { font-weight: bold; color: red; font-size: 20px; }
-        .active .state { color: #0f0; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
 
+        /* Bilgi Metni */
+        .info {
+            position: absolute; top: 80px; right: 15px; z-index: 1000;
+            font-size: 12px; color: #aaa; text-align: right; pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -41,90 +52,90 @@
         <iframe id="game" src="https://moomoo.io" allowfullscreen></iframe>
     </div>
 
-    <div id="status-box">
-        <h1>🌪️ SPIN BOT</h1>
-        <div class="state" id="mode-text">KAPALI</div>
-        <p>Açmak/Kapatmak için <b>'0'</b> tuşuna bas.</p>
+    <!-- Spin Bot Butonu -->
+    <button id="spin-btn" onclick="toggleSpin()">
+        SPIN BOT: KAPALI
+    </button>
+    
+    <div class="info">
+        Butona basınca karakter döner.<br>
+        Tekrar basınca durur.
     </div>
 
     <script>
+        const btn = document.getElementById('spin-btn');
         const frame = document.getElementById('game');
-        const box = document.getElementById('status-box');
-        const txt = document.getElementById('mode-text');
-
+        
         let isSpinning = false;
-        let spinInterval;
+        let spinTimer;
         let angle = 0;
-        const radius = 300; // Dairenin genisligi
-        const speed = 0.8;  // Donme hizi (Ne kadar yuksek o kadar hizli)
+        const radius = 250; // Donus yari capi
+        const speed = 0.5; // Donus hizi
 
-        // Spin Botunu Ac/Kapat
         function toggleSpin() {
-            if (isSpinning) {
+            if(isSpinning) {
                 // Kapat
-                clearInterval(spinInterval);
+                clearInterval(spinTimer);
                 isSpinning = false;
-                box.classList.remove('active');
-                txt.textContent = "KAPALI";
-                txt.style.color = "red";
+                btn.classList.remove('active');
+                btn.textContent = "SPIN BOT: KAPALI";
+                btn.style.background = "rgba(255,0,0,0.8)";
             } else {
                 // Ac
                 isSpinning = true;
-                box.classList.add('active');
-                txt.textContent = "AÇIK (DÖNÜYOR)";
-                txt.style.color = "#0f0";
+                btn.classList.add('active');
+                btn.textContent = "SPIN BOT: AKTİF";
+                btn.style.background = "rgba(0,255,0,0.8)";
                 
-                // Oyuna odaklan ki komutlar gitsin
+                // Oyuna odakla (Komut gitsin diye)
                 frame.focus();
 
-                // Hizli Dongu
-                spinInterval = setInterval(() => {
+                // Hizli Dongu (60 FPS)
+                spinTimer = setInterval(() => {
                     spinLogic();
-                }, 16); // 60 FPS (Yaklasik 16ms)
+                }, 16);
             }
         }
 
         function spinLogic() {
-            // Matematiksel Daire Hesabi
+            // Matematiksel Donus Hesabi
             angle += speed;
             
-            // Ekranin ortasini bul
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
+            // Ekranin ortasi
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
 
-            // Yeni mouse pozisyonunu hesapla
-            const x = centerX + Math.cos(angle) * radius;
-            const y = centerY + Math.sin(angle) * radius;
+            // Yeni koordinat
+            const x = cx + Math.cos(angle) * radius;
+            const y = cy + Math.sin(angle) * radius;
 
-            // Sanal Mouse Hareketi Olustur
-            // Bu olay tarayiciya "Mouse suraya gitti" der.
-            const moveEvent = new MouseEvent('mousemove', {
+            // Mouse Event Olustur
+            // Bu event tarayiciya "Mouse buraya gitti" der.
+            const evt = new MouseEvent('mousemove', {
                 view: window,
                 bubbles: true,
                 cancelable: true,
                 clientX: x,
                 clientY: y,
-                screenX: x, // Bazi tarayicilar bunu ister
+                screenX: x,
                 screenY: y
             });
 
-            // Olayi iframe'e gonder
-            frame.dispatchEvent(moveEvent);
+            // Eventi iframe'e gonder
+            // Not: CORS korumasi yoksa calisir.
+            frame.dispatchEvent(evt);
             
-            // Bazi durumlarda document'e gondermek de ise yarar
-            document.dispatchEvent(moveEvent);
+            // Ayrica document'e de gonder (Bazi oyunlar document'i dinler)
+            document.dispatchEvent(evt);
         }
 
-        // Klavye Dinleyicisi ('0' Tusu)
-        window.addEventListener('keydown', (e) => {
-            if (e.key === '0') {
-                toggleSpin();
-            }
-        });
+        // Kumanda ile butona kolay ulasmak icin 'Tab Index' destegi
+        // (Tarayici otomatik halleder ama yine de guvenlik onlemi)
+        btn.setAttribute('tabindex', '1');
 
-        // Bazen TV kumandasinda '0' tusu farkli kod gonderebilir, onu da yakalayalim
-        window.addEventListener('keypress', (e) => {
-            if (e.key === '0' || e.code === 'Digit0') {
+        // Enter tusu ile butonu tetikleme (Odak butondaysa)
+        btn.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter' || e.key === ' ') {
                 toggleSpin();
             }
         });
