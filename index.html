@@ -3,529 +3,558 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moo-TV Lite</title>
+    <title>Moo-TV ULTRA</title>
     <style>
-        /* SIFIRLAMA VE TV AYARLARI */
         * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; user-select: none; }
-        body { background: #b6db66; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-
-        /* OYUN ALANI (CANVAS) */
+        body { background: #b6db66; font-family: 'Segoe UI', sans-serif; }
         canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
 
-        /* ARAYUZ (HUD) */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+        /* UI KATMANI */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* KAYNAKLAR */
+        .res-bar {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(0,0,0,0.4); padding: 10px; border-radius: 10px;
+            display: flex; gap: 15px; color: white; font-weight: bold; font-size: 20px;
+            text-shadow: 1px 1px 2px black; pointer-events: auto;
+        }
+        .icon { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.3); display:inline-block; vertical-align:middle; }
+
+        /* INSAAT MENU */
+        #build-bar {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; pointer-events: auto;
+        }
+        .build-item {
+            width: 70px; height: 70px; background: rgba(0,0,0,0.5); border: 3px solid #555;
+            border-radius: 10px; cursor: pointer; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .build-item:hover { transform: scale(1.1); background: rgba(0,0,0,0.7); }
+        .build-item.selected { border-color: #f1c40f; box-shadow: 0 0 15px #f1c40f; transform: translateY(-10px); }
+        .cost { position: absolute; bottom: 2px; right: 5px; font-size: 12px; color: #fff; font-weight: bold; }
+
+        /* MINI HARITA */
+        #minimap-container {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 150px; height: 150px; background: rgba(0,0,0,0.3);
+            border: 2px solid #fff; border-radius: 50%; overflow: hidden;
         }
 
-        /* KAYNAK BARLARI */
-        .res-box {
-            position: absolute; top: 20px; right: 20px;
-            display: flex; flex-direction: column; gap: 10px;
-            background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;
-        }
-        .res-item {
-            color: white; font-weight: bold; font-size: 18px;
-            display: flex; align-items: center; gap: 10px;
-            text-shadow: 1px 1px 2px black;
-        }
-        .icon { width: 30px; height: 30px; border-radius: 50%; display: inline-block; border: 2px solid rgba(0,0,0,0.2); }
-        .wood-icon { background: #a56d38; }
-        .stone-icon { background: #888; }
-        .food-icon { background: #e74c3c; }
-
-        /* CAN BARI */
-        #health-container {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 300px; height: 20px; background: #333; border-radius: 10px;
-            border: 2px solid #000;
-        }
-        #health-bar {
-            width: 100%; height: 100%; background: #e74c3c; border-radius: 8px;
-            transition: width 0.2s;
+        /* BILDIRIM */
+        .notification {
+            position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.9); color: white; padding: 10px 20px;
+            border-radius: 5px; font-weight: bold; font-size: 18px;
+            opacity: 0; transition: opacity 0.5s; pointer-events: none;
         }
 
-        /* OLDUN EKRANI */
+        /* OLUM EKRANI */
         #death-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: none;
+            background: rgba(0,0,0,0.85); display: none;
             flex-direction: column; align-items: center; justify-content: center;
-            pointer-events: auto; z-index: 100;
+            z-index: 100; pointer-events: auto;
         }
-        h1 { color: white; font-size: 48px; text-shadow: 0 0 10px red; margin-bottom: 20px; }
-        button {
-            background: #2ecc71; color: white; border: none; padding: 15px 40px;
-            font-size: 24px; border-radius: 8px; cursor: pointer; border-bottom: 5px solid #27ae60;
+        .death-btn {
+            background: #27ae60; color: white; border: none; padding: 20px 50px;
+            font-size: 24px; border-radius: 10px; cursor: pointer; margin-top: 20px;
+            border-bottom: 5px solid #1e8449;
         }
-        button:active { transform: translateY(5px); border-bottom: none; }
+        .death-btn:active { transform: translateY(5px); border-bottom: none; }
 
-        /* HASAR YAZISI */
-        .damage-text {
-            position: absolute; color: white; font-weight: bold; font-size: 20px;
-            text-shadow: 0 0 3px black; pointer-events: none;
-            animation: floatUp 1s forwards;
-        }
-        @keyframes floatUp {
-            to { transform: translateY(-50px); opacity: 0; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- OYUN SAHNESI -->
     <canvas id="gameCanvas"></canvas>
 
-    <!-- ARAYUZ -->
     <div id="ui-layer">
-        <!-- Kaynaklar -->
-        <div class="res-box">
-            <div class="res-item"><div class="icon wood-icon"></div> <span id="wood-cnt">0</span></div>
-            <div class="res-item"><div class="icon stone-icon"></div> <span id="stone-cnt">0</span></div>
-            <div class="res-item"><div class="icon food-icon"></div> <span id="food-cnt">0</span></div>
-            <div class="res-item">🏆 <span id="score-cnt">0</span></div>
+        <div class="res-bar">
+            <div><div class="icon" style="background:#a56d38"></div> <span id="wood-val">0</span></div>
+            <div><div class="icon" style="background:#7f8c8d"></div> <span id="stone-val">0</span></div>
+            <div><div class="icon" style="background:#e74c3c"></div> <span id="food-val">0</span></div>
+            <div>🏆 <span id="score-val">0</span></div>
         </div>
 
-        <!-- Can Bari -->
-        <div id="health-container">
-            <div id="health-bar"></div>
+        <div id="build-bar">
+            <div class="build-item" onclick="selectBuild('wall')" id="btn-wall">
+                <div style="width:30px; height:30px; background:#555; border:2px solid #333;"></div>
+                <span class="cost">10W</span>
+            </div>
+            <div class="build-item" onclick="selectBuild('spike')" id="btn-spike">
+                <div style="width:0; height:0; border-left:15px solid transparent; border-right:15px solid transparent; border-bottom:30px solid #777;"></div>
+                <span class="cost">15S</span>
+            </div>
+            <div class="build-item" onclick="selectBuild('trap')" id="btn-trap">
+                <div style="width:30px; height:30px; border:3px solid #a56d38; border-radius:50%;"></div>
+                <span class="cost">30W</span>
+            </div>
+            <div class="build-item" onclick="selectBuild(null)" style="background:#c0392b">
+                <span style="color:white; font-weight:bold;">İPTAL</span>
+            </div>
         </div>
+
+        <div id="minimap-container"><canvas id="minimap"></canvas></div>
+        <div id="notify" class="notification">Yetersiz Kaynak!</div>
     </div>
 
-    <!-- OLUM EKRANI -->
     <div id="death-screen">
-        <h1>ÖLDÜN REİS</h1>
-        <p style="color:#ddd; margin-bottom:20px; font-size:20px;">Skorun: <span id="final-score">0</span></p>
-        <button onclick="location.reload()">TEKRAR OYNA</button>
+        <h1 style="color:white; font-size:50px; text-shadow:0 0 20px red;">ÖLDÜN REİS!</h1>
+        <p style="color:#ddd; font-size:24px; margin-top:10px;">Skorun: <span id="final-score">0</span></p>
+        <button class="death-btn" onclick="location.reload()">TEKRAR DOĞ</button>
     </div>
 
     <script>
-        // --- OYUN AYARLARI VE DEGISKENLER ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
-        // Ekrani Tam Kapla
+        const miniCanvas = document.getElementById('minimap');
+        const miniCtx = miniCanvas.getContext('2d');
+
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        miniCanvas.width = 150; miniCanvas.height = 150;
 
-        // Oyuncu
+        // AYARLAR
+        const mapSize = 3000;
         const player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 25,
-            angle: 0,
-            speed: 4, // TV icin hiz optimize edildi
-            health: 100,
-            maxHealth: 100,
-            wood: 0,
-            stone: 0,
-            food: 0,
-            score: 0,
-            attacking: false,
-            weaponAngle: 0
+            x: 0, y: 0, angle: 0, radius: 25, speed: 5,
+            health: 100, maxHealth: 100,
+            wood: 0, stone: 0, food: 0, score: 0,
+            attacking: false, weaponAngle: 0
         };
-
-        // Dunya Nesneleri
-        const objects = []; // Agaclar, taslar
-        const enemies = []; // Botlar
-        const particles = []; // Efektler
-        const mapSize = 2000; // Harita buyuklugu
-
-        // Klavye Durumu (Kumanda Yon Tuslari)
-        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-
-        // Mouse Durumu (LG Sihirli Kumanda)
+        const cam = { x: 0, y: 0 };
+        
+        let objects = [];
+        let enemies = [];
+        let buildings = [];
+        let particles = [];
+        
+        const keys = {};
         const mouse = { x: canvas.width/2, y: canvas.height/2, down: false };
+        let buildMode = null;
 
-        // Kamera (Ekranin ortasinda oyuncu kalsin diye)
-        const camera = { x: 0, y: 0 };
-
-        // --- SISTEM FONKSIYONLARI ---
-
-        // Rastgele Sayi
-        function rand(min, max) { return Math.random() * (max - min) + min; }
-
-        // Mesafe Hesapla
-        function getDist(x1, y1, x2, y2) { return Math.sqrt((x2-x1)**2 + (y2-y1)**2); }
-
-        // Daire Carpisma Kontrolu
-        function checkCol(c1, c2) {
-            const dist = getDist(c1.x, c1.y, c2.x, c2.y);
-            return dist < c1.radius + c2.radius;
+        // --- HARITA OLUSTUR ---
+        function initWorld() {
+            for(let i=0; i<80; i++) spawnObj('tree');
+            for(let i=0; i<50; i++) spawnObj('rock');
+            for(let i=0; i<40; i++) spawnObj('bush');
+            for(let i=0; i<10; i++) spawnEnemy();
         }
 
-        // Harita Olustur
-        function initMap() {
-            // Agaclar (Yesil)
-            for(let i=0; i<30; i++) {
-                objects.push({
-                    id: Math.random(),
-                    type: 'tree',
-                    x: rand(-mapSize/2, mapSize/2),
-                    y: rand(-mapSize/2, mapSize/2),
-                    radius: rand(30, 50),
-                    health: 50,
-                    maxHealth: 50,
-                    color: '#2ecc71', // Yesil
-                    resource: 'wood'
-                });
+        // AKILLI DOGMA SISTEMI (Binalarin ustune dogmaz)
+        function spawnObj(type) {
+            let valid = false;
+            let attempts = 0;
+            let x, y, r;
+
+            // Tip ozellikleri
+            if(type === 'tree') r = rand(40, 60);
+            else if(type === 'rock') r = rand(30, 50);
+            else r = 25; // Bush
+
+            // Bos yer bulana kadar dene (Max 50 deneme)
+            while(!valid && attempts < 50) {
+                x = rand(-mapSize/2, mapSize/2);
+                y = rand(-mapSize/2, mapSize/2);
+                valid = true;
+
+                // Binalara carpiyor mu?
+                for(let b of buildings) {
+                    if(Math.hypot(x-b.x, y-b.y) < r + b.radius + 10) {
+                        valid = false; break;
+                    }
+                }
+                // Oyuncuya cok yakin dogmasin
+                if(Math.hypot(x-player.x, y-player.y) < 200) valid = false;
+
+                attempts++;
             }
-            // Taslar (Gri)
-            for(let i=0; i<20; i++) {
-                objects.push({
-                    id: Math.random(),
-                    type: 'rock',
-                    x: rand(-mapSize/2, mapSize/2),
-                    y: rand(-mapSize/2, mapSize/2),
-                    radius: rand(25, 45),
-                    health: 80,
-                    maxHealth: 80,
-                    color: '#95a5a6', // Gri
-                    resource: 'stone'
-                });
-            }
-            // Yemek (Kirmizi Cali)
-            for(let i=0; i<15; i++) {
-                objects.push({
-                    id: Math.random(),
-                    type: 'bush',
-                    x: rand(-mapSize/2, mapSize/2),
-                    y: rand(-mapSize/2, mapSize/2),
-                    radius: 20,
-                    health: 20,
-                    maxHealth: 20,
-                    color: '#e74c3c', // Kirmizi
-                    resource: 'food'
-                });
-            }
+
+            // Eger 50 denemede yer bulamazsa, mecbur rastgele koyariz (nadir durum)
+            let hp = type==='tree'?100 : (type==='rock'?150:30);
+            let col = type==='tree'?'#2ecc71' : (type==='rock'?'#95a5a6':'#e74c3c');
+
+            objects.push({
+                x: x, y: y, radius: r, type: type,
+                health: hp, maxHealth: hp, color: col
+            });
         }
 
-        // Dusman Olustur (Moo Botlari)
         function spawnEnemy() {
-            if(enemies.length < 5) {
-                // Oyuncudan uzakta dogur
-                let ex, ey, d;
-                do {
-                    ex = rand(-mapSize/2, mapSize/2);
-                    ey = rand(-mapSize/2, mapSize/2);
-                    d = getDist(ex, ey, player.x, player.y);
-                } while(d < 600); // 600px yakinda dogmasin
+            // Uzakta dog
+            let x, y, d;
+            do {
+                x = rand(-mapSize/2, mapSize/2);
+                y = rand(-mapSize/2, mapSize/2);
+                d = Math.hypot(x-player.x, y-player.y);
+            } while(d < 800);
 
-                enemies.push({
-                    x: ex,
-                    y: ey,
-                    radius: 25,
-                    speed: 2.5, // Oyuncudan biraz yavas
-                    health: 60,
-                    maxHealth: 60,
-                    angle: 0,
-                    color: '#c0392b' // Koyu Kirmizi
-                });
-            }
+            enemies.push({
+                x:x, y:y, angle:0, radius:25, speed:2.5,
+                health:100, maxHealth:100, state:'IDLE',
+                wanderTarget:{x:x, y:y}
+            });
         }
 
-        // Hasar Yazisi Goster
-        function showDamage(x, y, amount) {
-            const el = document.createElement('div');
-            el.className = 'damage-text';
-            el.style.left = (canvas.width/2 + (x - player.x)) + 'px';
-            el.style.top = (canvas.height/2 + (y - player.y)) + 'px';
-            el.textContent = "-" + amount;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
-        }
-
-        // --- GUNCELLEME DONGUSU (OYUN MANTIGI) ---
-        function update() {
-            if(player.health <= 0) return;
-
-            // 1. Oyuncu Hareketi (Yon Tuslari)
-            if(keys.ArrowUp) player.y -= player.speed;
-            if(keys.ArrowDown) player.y += player.speed;
-            if(keys.ArrowLeft) player.x -= player.speed;
-            if(keys.ArrowRight) player.x += player.speed;
-
-            // Harita Sinirlari
-            player.x = Math.max(-mapSize/2, Math.min(mapSize/2, player.x));
-            player.y = Math.max(-mapSize/2, Math.min(mapSize/2, player.y));
-
-            // 2. Oyuncu Donusu (Mouse/LG Kumanda)
-            // Mouse konumu ekrana gore oldugu icin, oyuncunun ekran ortasina gore acisini aliyoruz
-            const screenCx = canvas.width / 2;
-            const screenCy = canvas.height / 2;
-            player.angle = Math.atan2(mouse.y - screenCy, mouse.x - screenCx);
-
-            // 3. Saldiri Mantigi
-            if(mouse.down) {
-                // Silah savurma efekti
-                player.attacking = true;
-                player.weaponAngle += 0.4;
+        // --- FIZIK MOTORU ---
+        // Kati objelerle carpisma kontrolu (Icindenn gecmeyi engeller)
+        function resolveEnvironmentCollision(entity) {
+            objects.forEach(obj => {
+                if(obj.type === 'bush') return; // Calilarin icinden gecilir
                 
-                // Vurus Animasyonu Bitti mi?
-                if(player.weaponAngle > Math.PI) {
-                    player.weaponAngle = 0;
-                    // Surekli basili tutarsa tekrar vurması icin bekleme suresi (Cooldown) yok, seri vurur.
-                }
-
-                // Vurus Aninda Hasar Kontrolu (Yarim turda vursun)
-                if(player.weaponAngle > 1 && player.weaponAngle < 2) {
-                    checkHit();
-                }
-            } else {
-                player.attacking = false;
-                player.weaponAngle = 0;
-            }
-
-            // 4. Kamera Pozisyonu (Oyuncuyu takip et)
-            camera.x = player.x - canvas.width / 2;
-            camera.y = player.y - canvas.height / 2;
-
-            // 5. Dusman Mantigi (Yapay Zeka)
-            spawnEnemy();
-            enemies.forEach((en, index) => {
-                // Oyuncuya don ve yuru
-                en.angle = Math.atan2(player.y - en.y, player.x - en.x);
-                en.x += Math.cos(en.angle) * en.speed;
-                en.y += Math.sin(en.angle) * en.speed;
-
-                // Oyuncuya carpti mi?
-                if(checkCol(player, en)) {
-                    // Oyuncuya hasar ver (Geri tepme)
-                    player.health -= 0.5;
-                    updateUI();
-                    
-                    // Geri tepme
-                    en.x -= Math.cos(en.angle) * 10;
-                    en.y -= Math.sin(en.angle) * 10;
+                const dist = Math.hypot(entity.x - obj.x, entity.y - obj.y);
+                const minDist = entity.radius + obj.radius;
+                
+                if(dist < minDist) {
+                    // Itme gucu
+                    const angle = Math.atan2(entity.y - obj.y, entity.x - obj.x);
+                    const push = minDist - dist;
+                    entity.x += Math.cos(angle) * push;
+                    entity.y += Math.sin(angle) * push;
                 }
             });
 
-            // Olum Kontrolu
-            if(player.health <= 0) {
-                document.getElementById('death-screen').style.display = 'flex';
-                document.getElementById('final-score').innerText = player.score;
-            }
-        }
-
-        // Vurus Kontrolu
-        function checkHit() {
-            // Silahin ucu (Tahmini)
-            const weaponX = player.x + Math.cos(player.angle) * 50;
-            const weaponY = player.y + Math.sin(player.angle) * 50;
-
-            // Nesnelere vurdu mu?
-            objects.forEach((obj, i) => {
-                if(getDist(weaponX, weaponY, obj.x, obj.y) < obj.radius + 20) {
-                    obj.health -= 10;
-                    // Titreme efekti
-                    obj.x += Math.cos(player.angle) * 2;
-                    obj.y += Math.sin(player.angle) * 2;
-
-                    // Kaynak Topla
-                    if(obj.health <= 0) {
-                        if(obj.resource === 'wood') player.wood += 5;
-                        if(obj.resource === 'stone') player.stone += 5;
-                        if(obj.resource === 'food') { player.food += 5; player.health = Math.min(100, player.health + 10); }
-                        
-                        player.score += 10;
-                        showDamage(obj.x, obj.y, "+Resource");
-                        objects.splice(i, 1);
-                        updateUI();
-                        
-                        // Yerine yenisi dogsun (Uzun sure sonra)
-                        setTimeout(() => {
-                           // Basit respawn mantigi: yeniden nesne ekle
-                        }, 5000); 
+            // Binalar da katidir
+            buildings.forEach(b => {
+                if(b.type === 'trap') return; // Tuzak uzerinden gecilir (yavaslatir belki)
+                const dist = Math.hypot(entity.x - b.x, entity.y - b.y);
+                const minDist = entity.radius + b.radius;
+                
+                if(dist < minDist) {
+                    const angle = Math.atan2(entity.y - b.y, entity.x - b.x);
+                    const push = minDist - dist;
+                    entity.x += Math.cos(angle) * push;
+                    entity.y += Math.sin(angle) * push;
+                    
+                    if(b.type === 'spike' && entity !== player) {
+                         entity.health -= 0.5; // Diken zombiye hasar verir
                     }
                 }
             });
+        }
 
-            // Dusmana vurdu mu?
+        function update() {
+            if(player.health <= 0) return;
+
+            // Hareket
+            let mvX = 0, mvY = 0;
+            if(keys['ArrowUp'] || keys['w']) mvY -= player.speed;
+            if(keys['ArrowDown'] || keys['s']) mvY += player.speed;
+            if(keys['ArrowLeft'] || keys['a']) mvX -= player.speed;
+            if(keys['ArrowRight'] || keys['d']) mvX += player.speed;
+
+            player.x += mvX; player.y += mvY;
+
+            // Harita Siniri
+            player.x = Math.max(-mapSize/2, Math.min(mapSize/2, player.x));
+            player.y = Math.max(-mapSize/2, Math.min(mapSize/2, player.y));
+
+            // Kati Cisim Kontrolu
+            resolveEnvironmentCollision(player);
+
+            // Kamera
+            cam.x = player.x - canvas.width/2;
+            cam.y = player.y - canvas.height/2;
+
+            // Mouse Acisi
+            player.angle = Math.atan2(mouse.y - canvas.height/2, mouse.x - canvas.width/2);
+
+            // Islem (Saldiri / Insaat)
+            if(mouse.down) {
+                if(buildMode) {
+                    placeBuilding();
+                    mouse.down = false; 
+                } else {
+                    player.attacking = true;
+                }
+            } else {
+                player.attacking = false;
+            }
+
+            // Animasyon
+            if(player.attacking) {
+                player.weaponAngle += 0.35;
+                if(player.weaponAngle > Math.PI) player.weaponAngle = 0;
+                if(player.weaponAngle > 1.2 && player.weaponAngle < 1.6) checkHit();
+            } else {
+                player.weaponAngle = 0;
+            }
+
+            // AI Guncelleme
+            updateEnemies();
+
+            // Efektler
+            updateParticles();
+
+            // UI
+            updateUI();
+        }
+
+        function updateEnemies() {
+            if(enemies.length < 15 && Math.random() < 0.02) spawnEnemy();
+
             enemies.forEach((en, i) => {
-                 if(getDist(weaponX, weaponY, en.x, en.y) < en.radius + 30) {
-                     en.health -= 20;
-                     // Geri tepme
-                     en.x += Math.cos(player.angle) * 40;
-                     en.y += Math.sin(player.angle) * 40;
-                     showDamage(en.x, en.y, 20);
+                // Yapay Zeka
+                const dist = Math.hypot(player.x - en.x, player.y - en.y);
+                
+                if(dist < 500) en.state = 'CHASE';
+                else en.state = 'IDLE';
 
-                     if(en.health <= 0) {
-                         enemies.splice(i, 1);
-                         player.score += 100;
-                         updateUI();
-                     }
-                 }
+                let angle = en.angle;
+                let moveSpeed = 0;
+
+                if(en.state === 'CHASE') {
+                    angle = Math.atan2(player.y - en.y, player.x - en.x);
+                    moveSpeed = en.speed;
+                    // Saldiri
+                    if(dist < player.radius + en.radius + 5) {
+                        player.health -= 0.3;
+                        spawnParticles(player.x, player.y, 'red', 1);
+                        if(player.health <= 0) gameOver();
+                    }
+                } else {
+                    // IDLE
+                    const dt = Math.hypot(en.wanderTarget.x - en.x, en.wanderTarget.y - en.y);
+                    if(dt < 10 || Math.random() < 0.01) {
+                        en.wanderTarget.x = en.x + rand(-300, 300);
+                        en.wanderTarget.y = en.y + rand(-300, 300);
+                    }
+                    angle = Math.atan2(en.wanderTarget.y - en.y, en.wanderTarget.x - en.x);
+                    moveSpeed = 1;
+                }
+
+                en.angle = angle;
+                en.x += Math.cos(angle) * moveSpeed;
+                en.y += Math.sin(angle) * moveSpeed;
+
+                // Zombi de agacin icinden gecemez
+                resolveEnvironmentCollision(en);
             });
         }
 
-        function updateUI() {
-            document.getElementById('wood-cnt').innerText = player.wood;
-            document.getElementById('stone-cnt').innerText = player.stone;
-            document.getElementById('food-cnt').innerText = player.food;
-            document.getElementById('score-cnt').innerText = player.score;
-            document.getElementById('health-bar').style.width = player.health + "%";
+        function checkHit() {
+            const tx = player.x + Math.cos(player.angle) * 60;
+            const ty = player.y + Math.sin(player.angle) * 60;
+
+            // Objeler
+            for(let i=objects.length-1; i>=0; i--) {
+                let obj = objects[i];
+                if(Math.hypot(tx-obj.x, ty-obj.y) < obj.radius + 20) {
+                    // Hasar
+                    obj.health -= 20; 
+                    spawnParticles(obj.x, obj.y, obj.color, 3);
+                    // Hafif sarsinti
+                    obj.x += Math.cos(player.angle)*2; obj.y += Math.sin(player.angle)*2;
+
+                    if(obj.health <= 0) {
+                        if(obj.type === 'tree') player.wood += 15;
+                        if(obj.type === 'rock') player.stone += 10;
+                        if(obj.type === 'bush') { player.food += 10; player.health=Math.min(100, player.health+10); }
+                        player.score += 50;
+                        
+                        // Eski objeyi sil
+                        objects.splice(i, 1);
+                        // YENISINI DOGUR (Respawn)
+                        setTimeout(() => spawnObj(obj.type), 2000); 
+                    }
+                    return; // Ayni anda 1 taneye vur
+                }
+            }
+
+            // Dusmanlar
+            for(let i=enemies.length-1; i>=0; i--) {
+                let en = enemies[i];
+                if(Math.hypot(tx-en.x, ty-en.y) < en.radius + 30) {
+                    en.health -= 35;
+                    spawnParticles(en.x, en.y, 'red', 5);
+                    // Geri tepme
+                    en.x += Math.cos(player.angle) * 50;
+                    en.y += Math.sin(player.angle) * 50;
+                    
+                    if(en.health <= 0) {
+                        enemies.splice(i, 1);
+                        player.score += 200;
+                    }
+                    return;
+                }
+            }
         }
 
-        // --- CIZIM DONGUSU (RENDER) ---
-        function draw() {
-            // Ekrani Temizle
-            ctx.fillStyle = '#b6db66'; // Moomoo Cimen Rengi
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        function selectBuild(type) {
+            buildMode = type;
+            document.querySelectorAll('.build-item').forEach(e => e.classList.remove('selected'));
+            if(type) document.getElementById('btn-'+type).classList.add('selected');
+        }
 
-            // Grid (Izgara) Cizimi
-            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            const gridSize = 100;
-            const startX = Math.floor(camera.x / gridSize) * gridSize;
-            const startY = Math.floor(camera.y / gridSize) * gridSize;
+        function placeBuilding() {
+            let costW = 0, costS = 0;
+            if(buildMode === 'wall') costW = 10;
+            if(buildMode === 'spike') costS = 15;
+            if(buildMode === 'trap') costW = 30;
+
+            if(player.wood >= costW && player.stone >= costS) {
+                player.wood -= costW; player.stone -= costS;
+                const bx = player.x + Math.cos(player.angle) * 60;
+                const by = player.y + Math.sin(player.angle) * 60;
+                
+                buildings.push({
+                    x: bx, y: by, radius: 30, type: buildMode, health: 200
+                });
+                spawnParticles(bx, by, '#fff', 10);
+                selectBuild(null);
+            } else {
+                const n = document.getElementById('notify');
+                n.style.opacity = 1; setTimeout(() => n.style.opacity = 0, 1000);
+            }
+        }
+
+        function draw() {
+            // Zemin
+            ctx.fillStyle = '#b6db66'; ctx.fillRect(0,0,canvas.width,canvas.height);
             
-            for(let x = startX - gridSize; x < startX + canvas.width + gridSize; x += gridSize) {
-                ctx.moveTo(x - camera.x, 0);
-                ctx.lineTo(x - camera.x, canvas.height);
-            }
-            for(let y = startY - gridSize; y < startY + canvas.height + gridSize; y += gridSize) {
-                ctx.moveTo(0, y - camera.y);
-                ctx.lineTo(canvas.width, y - camera.y);
-            }
+            // Grid
+            ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 2; ctx.beginPath();
+            let gx = Math.floor(cam.x/100)*100, gy = Math.floor(cam.y/100)*100;
+            for(let x=gx; x<gx+canvas.width+100; x+=100) { ctx.moveTo(x-cam.x,0); ctx.lineTo(x-cam.x,canvas.height); }
+            for(let y=gy; y<gy+canvas.height+100; y+=100) { ctx.moveTo(0,y-cam.y); ctx.lineTo(canvas.width,y-cam.y); }
             ctx.stroke();
 
-            // Dunya Sinirlari (Kirmizi Cizgi)
-            ctx.strokeStyle = 'rgba(255,0,0,0.3)';
-            ctx.lineWidth = 5;
-            ctx.strokeRect(-mapSize/2 - camera.x, -mapSize/2 - camera.y, mapSize, mapSize);
+            // Harita Siniri
+            ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth = 10;
+            ctx.strokeRect(-mapSize/2 - cam.x, -mapSize/2 - cam.y, mapSize, mapSize);
 
-            // Nesneleri Ciz
-            objects.forEach(obj => {
-                // Ekranda degilse cizme (Optimizasyon)
-                if(obj.x - camera.x < -100 || obj.x - camera.x > canvas.width + 100) return;
-                if(obj.y - camera.y < -100 || obj.y - camera.y > canvas.height + 100) return;
+            // Cizim Fonksiyonlari
+            function drawCircle(x,y,r,col,stroke=true) {
+                if(x-cam.x<-100 || x-cam.x>canvas.width+100 || y-cam.y<-100 || y-cam.y>canvas.height+100) return;
+                ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x-cam.x, y-cam.y, r, 0, Math.PI*2); ctx.fill();
+                if(stroke){ ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth=3; ctx.stroke(); }
+            }
 
-                ctx.fillStyle = obj.color;
-                ctx.beginPath();
-                ctx.arc(obj.x - camera.x, obj.y - camera.y, obj.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke(); // Kenarlik
-                
-                // Nesne cani azsa catlak goster (Basitce rengi koyulastir)
-                ctx.fillStyle = 'rgba(0,0,0,0.2)';
-                ctx.beginPath();
-                ctx.arc(obj.x - camera.x, obj.y - camera.y, obj.radius * (1 - obj.health/obj.maxHealth), 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // Dusmanlari Ciz
-            enemies.forEach(en => {
-                ctx.save();
-                ctx.translate(en.x - camera.x, en.y - camera.y);
-                ctx.rotate(en.angle);
-
-                // Govde
-                ctx.fillStyle = en.color;
-                ctx.beginPath();
-                ctx.arc(0, 0, en.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.stroke();
-
-                // Eller (Saldirmasi icin)
-                ctx.fillStyle = '#333';
-                ctx.beginPath();
-                ctx.arc(20, 15, 8, 0, Math.PI*2); // Sag el
-                ctx.arc(20, -15, 8, 0, Math.PI*2); // Sol el
-                ctx.fill();
-
-                // Boynuz (Moo Bot oldugu belli olsun)
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.moveTo(10, -10); ctx.lineTo(30, -25); ctx.lineTo(15, -5);
-                ctx.moveTo(10, 10); ctx.lineTo(30, 25); ctx.lineTo(15, 5);
-                ctx.fill();
-
-                // Can Bari
-                ctx.fillStyle = 'red';
-                ctx.fillRect(-20, -40, 40, 5);
-                ctx.fillStyle = '#0f0';
-                ctx.fillRect(-20, -40, 40 * (en.health/en.maxHealth), 5);
-
-                ctx.restore();
-            });
-
-            // OYUNCUYU CIZ
-            if(player.health > 0) {
-                ctx.save();
-                // Oyuncu her zaman ekranin ortasindadir
-                ctx.translate(canvas.width/2, canvas.height/2);
-                ctx.rotate(player.angle);
-
-                // Silah (Balta)
-                ctx.save();
-                // Vurus animasyonu icin silahi cevir
-                if(player.attacking) {
-                    ctx.rotate(player.weaponAngle);
+            // Binalar
+            buildings.forEach(b => {
+                if(b.type==='wall') {
+                    ctx.fillStyle='#555'; ctx.fillRect(b.x-20-cam.x, b.y-20-cam.y, 40, 40);
+                    ctx.strokeStyle='#333'; ctx.strokeRect(b.x-20-cam.x, b.y-20-cam.y, 40, 40);
+                } else if(b.type==='spike') {
+                    ctx.fillStyle='#999'; ctx.beginPath();
+                    for(let i=0;i<4;i++) ctx.lineTo(b.x-cam.x+Math.cos(i*1.57)*30, b.y-cam.y+Math.sin(i*1.57)*30);
+                    ctx.fill(); ctx.stroke();
+                } else {
+                     drawCircle(b.x, b.y, 25, 'rgba(139,69,19,0.8)');
+                     drawCircle(b.x, b.y, 10, '#000', false);
                 }
-                // Balta sapi
-                ctx.fillStyle = '#8e44ad';
-                ctx.fillRect(20, -5, 40, 10);
-                // Balta ucu (Altin Balta)
-                ctx.fillStyle = '#f1c40f';
-                ctx.beginPath();
-                ctx.arc(60, 0, 15, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
+            });
 
+            // Objeler
+            objects.forEach(o => {
+                drawCircle(o.x, o.y, o.radius, o.color);
+                // Can gostergesi (Hasar alinca koyulassin)
+                if(o.health < o.maxHealth) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.beginPath(); ctx.arc(o.x-cam.x, o.y-cam.y, o.radius*(1-o.health/o.maxHealth), 0, Math.PI*2); ctx.fill();
+                }
+            });
+
+            // Parcaciklar
+            particles.forEach(p => { drawCircle(p.x, p.y, p.radius, p.color, false); });
+
+            // Dusmanlar
+            enemies.forEach(en => {
+                ctx.save(); ctx.translate(en.x-cam.x, en.y-cam.y); ctx.rotate(en.angle);
                 // Eller
-                ctx.fillStyle = '#333';
-                ctx.beginPath();
-                ctx.arc(20, 20, 10, 0, Math.PI*2); // Sag el
-                ctx.arc(20, -20, 10, 0, Math.PI*2); // Sol el
-                ctx.fill();
-
-                // Govde (Kafa)
-                ctx.fillStyle = '#fff'; // Ten rengi yerine beyaz (Moo karakteri)
-                ctx.beginPath();
-                ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.stroke();
-
+                ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(20,15,8,0,6.28); ctx.arc(20,-15,8,0,6.28); ctx.fill();
+                // Govde
+                ctx.fillStyle=en.color; ctx.beginPath(); ctx.arc(0,0,en.radius,0,6.28); ctx.fill();
+                ctx.strokeStyle='#333'; ctx.stroke();
                 ctx.restore();
+                // Can bari
+                ctx.fillStyle='red'; ctx.fillRect(en.x-cam.x-20, en.y-cam.y-40, 40, 5);
+                ctx.fillStyle='#0f0'; ctx.fillRect(en.x-cam.x-20, en.y-cam.y-40, 40*(en.health/en.maxHealth), 5);
+            });
+
+            // OYUNCU
+            if(player.health > 0) {
+                ctx.save(); ctx.translate(canvas.width/2, canvas.height/2); ctx.rotate(player.angle);
+                // Silah
+                ctx.save(); ctx.translate(20, 20); ctx.rotate(player.weaponAngle);
+                ctx.fillStyle='#8e44ad'; ctx.fillRect(0,-4,50,8);
+                ctx.fillStyle='#f1c40f'; ctx.beginPath(); ctx.arc(50,0,15,0,6.28); ctx.fill();
+                ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(0,0,10,0,6.28); ctx.fill();
+                ctx.restore();
+                // Sol El
+                ctx.fillStyle='#333'; ctx.beginPath(); ctx.arc(20,-20,10,0,6.28); ctx.fill();
+                // Kafa
+                ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,0,player.radius,0,6.28); ctx.fill();
+                ctx.strokeStyle='#333'; ctx.lineWidth=3; ctx.stroke();
+                ctx.restore();
+                
+                // Oyuncu Can
+                ctx.fillStyle='#333'; ctx.fillRect(canvas.width/2-30, canvas.height/2+40, 60, 8);
+                ctx.fillStyle='#2ecc71'; ctx.fillRect(canvas.width/2-30, canvas.height/2+40, 60*(player.health/player.maxHealth), 8);
+            }
+
+            // MiniMap
+            miniCtx.fillStyle='#2c3e50'; miniCtx.fillRect(0,0,150,150);
+            const sc = 150/mapSize, cx=75, cy=75;
+            
+            function drawMini(arr, col) {
+                miniCtx.fillStyle = col;
+                arr.forEach(item => {
+                    let dx = (item.x-player.x)*sc, dy = (item.y-player.y)*sc;
+                    if(dx*dx+dy*dy < 70*70) {
+                        miniCtx.beginPath(); miniCtx.arc(cx+dx, cy+dy, 2, 0, 6.28); miniCtx.fill();
+                    }
+                });
+            }
+            drawMini(objects.filter(o=>o.type!=='bush'), '#999'); // Objeler
+            drawMini(enemies, 'red'); // Dusmanlar
+            drawMini(buildings, 'yellow'); // Binalar
+            miniCtx.fillStyle='#fff'; miniCtx.beginPath(); miniCtx.arc(cx,cy,3,0,6.28); miniCtx.fill(); // Oyuncu
+        }
+
+        function spawnParticles(x,y,col,c) {
+            for(let i=0;i<c;i++) particles.push({x:x, y:y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10, life:20, color:col, radius:rand(2,5)});
+        }
+        function updateParticles() {
+            for(let i=particles.length-1;i>=0;i--) {
+                let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life--;
+                if(p.life<=0) particles.splice(i,1);
             }
         }
-
-        // OYUN DONGUSU
-        function loop() {
-            update();
-            draw();
-            requestAnimationFrame(loop);
+        function updateUI() {
+            document.getElementById('wood-val').innerText = Math.floor(player.wood);
+            document.getElementById('stone-val').innerText = Math.floor(player.stone);
+            document.getElementById('food-val').innerText = Math.floor(player.food);
+            document.getElementById('score-val').innerText = Math.floor(player.score);
         }
+        function gameOver() {
+            document.getElementById('final-score').innerText = Math.floor(player.score);
+            document.getElementById('death-screen').style.display = 'flex';
+        }
+        function rand(min, max) { return Math.random()*(max-min)+min; }
 
-        // --- INPUT DINLEYICILERI ---
+        function loop() { update(); draw(); requestAnimationFrame(loop); }
 
-        // Klavye (Yon Tuslari)
-        window.addEventListener('keydown', e => {
-            if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
-        });
-        window.addEventListener('keyup', e => {
-            if(keys.hasOwnProperty(e.key)) keys[e.key] = false;
-        });
-
-        // Mouse (LG Kumanda Imleci)
-        window.addEventListener('mousemove', e => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
-        window.addEventListener('mousedown', () => mouse.down = true);
-        window.addEventListener('mouseup', () => mouse.down = false);
+        window.addEventListener('keydown', e => keys[e.key] = true);
+        window.addEventListener('keyup', e => keys[e.key] = false);
+        window.addEventListener('mousemove', e => { mouse.x=e.clientX; mouse.y=e.clientY; });
+        window.addEventListener('mousedown', () => mouse.down=true);
+        window.addEventListener('mouseup', () => mouse.down=false);
+        window.addEventListener('resize', () => { canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
         
-        // Pencere Boyutu Degisirse
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // Build Kisayollar
+        window.addEventListener('keydown', e => {
+            if(e.key==='1') selectBuild('wall');
+            if(e.key==='2') selectBuild('spike');
+            if(e.key==='3') selectBuild('trap');
+            if(e.key==='Escape') selectBuild(null);
         });
 
-        // BASLAT
-        initMap();
+        initWorld();
         loop();
-
     </script>
 </body>
 </html>
