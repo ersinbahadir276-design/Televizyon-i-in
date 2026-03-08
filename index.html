@@ -2,143 +2,529 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spin Bot Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moo-TV Lite</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; }
-        body { background: #000; height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        /* SIFIRLAMA VE TV AYARLARI */
+        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; user-select: none; }
+        body { background: #b6db66; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
-        /* Oyun Alani */
-        #game-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
-        }
-        iframe { width: 100%; height: 100%; border: none; display: block; }
+        /* OYUN ALANI (CANVAS) */
+        canvas { display: block; width: 100vw; height: 100vh; cursor: crosshair; }
 
-        /* Spin Bot Butonu (Sag Ust) */
-        #spin-btn {
-            position: absolute; top: 15px; right: 15px; z-index: 1000;
-            background: rgba(255, 0, 0, 0.8); color: white;
-            border: 3px solid #ff0000; padding: 15px 30px;
-            font-size: 18px; font-weight: bold; border-radius: 50px;
-            cursor: pointer; text-transform: uppercase;
-            box-shadow: 0 0 10px #ff0000;
-            transition: all 0.3s ease;
+        /* ARAYUZ (HUD) */
+        #ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
         }
 
-        /* Bot Acik Hali (Yesil) */
-        #spin-btn.active {
-            background: rgba(0, 255, 0, 0.8);
-            border-color: #0f0;
-            box-shadow: 0 0 20px #0f0;
-            animation: pulse 1s infinite; /* Yanip sonme efekti */
+        /* KAYNAK BARLARI */
+        .res-box {
+            position: absolute; top: 20px; right: 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;
+        }
+        .res-item {
+            color: white; font-weight: bold; font-size: 18px;
+            display: flex; align-items: center; gap: 10px;
+            text-shadow: 1px 1px 2px black;
+        }
+        .icon { width: 30px; height: 30px; border-radius: 50%; display: inline-block; border: 2px solid rgba(0,0,0,0.2); }
+        .wood-icon { background: #a56d38; }
+        .stone-icon { background: #888; }
+        .food-icon { background: #e74c3c; }
+
+        /* CAN BARI */
+        #health-container {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            width: 300px; height: 20px; background: #333; border-radius: 10px;
+            border: 2px solid #000;
+        }
+        #health-bar {
+            width: 100%; height: 100%; background: #e74c3c; border-radius: 8px;
+            transition: width 0.2s;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
+        /* OLDUN EKRANI */
+        #death-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: none;
+            flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: auto; z-index: 100;
         }
+        h1 { color: white; font-size: 48px; text-shadow: 0 0 10px red; margin-bottom: 20px; }
+        button {
+            background: #2ecc71; color: white; border: none; padding: 15px 40px;
+            font-size: 24px; border-radius: 8px; cursor: pointer; border-bottom: 5px solid #27ae60;
+        }
+        button:active { transform: translateY(5px); border-bottom: none; }
 
-        /* Bilgi Metni */
-        .info {
-            position: absolute; top: 80px; right: 15px; z-index: 1000;
-            font-size: 12px; color: #aaa; text-align: right; pointer-events: none;
+        /* HASAR YAZISI */
+        .damage-text {
+            position: absolute; color: white; font-weight: bold; font-size: 20px;
+            text-shadow: 0 0 3px black; pointer-events: none;
+            animation: floatUp 1s forwards;
+        }
+        @keyframes floatUp {
+            to { transform: translateY(-50px); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <iframe id="game" src="https://moomoo.io" allowfullscreen></iframe>
+    <!-- OYUN SAHNESI -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- ARAYUZ -->
+    <div id="ui-layer">
+        <!-- Kaynaklar -->
+        <div class="res-box">
+            <div class="res-item"><div class="icon wood-icon"></div> <span id="wood-cnt">0</span></div>
+            <div class="res-item"><div class="icon stone-icon"></div> <span id="stone-cnt">0</span></div>
+            <div class="res-item"><div class="icon food-icon"></div> <span id="food-cnt">0</span></div>
+            <div class="res-item">🏆 <span id="score-cnt">0</span></div>
+        </div>
+
+        <!-- Can Bari -->
+        <div id="health-container">
+            <div id="health-bar"></div>
+        </div>
     </div>
 
-    <!-- Spin Bot Butonu -->
-    <button id="spin-btn" onclick="toggleSpin()">
-        SPIN BOT: KAPALI
-    </button>
-    
-    <div class="info">
-        Butona basınca karakter döner.<br>
-        Tekrar basınca durur.
+    <!-- OLUM EKRANI -->
+    <div id="death-screen">
+        <h1>ÖLDÜN REİS</h1>
+        <p style="color:#ddd; margin-bottom:20px; font-size:20px;">Skorun: <span id="final-score">0</span></p>
+        <button onclick="location.reload()">TEKRAR OYNA</button>
     </div>
 
     <script>
-        const btn = document.getElementById('spin-btn');
-        const frame = document.getElementById('game');
+        // --- OYUN AYARLARI VE DEGISKENLER ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
         
-        let isSpinning = false;
-        let spinTimer;
-        let angle = 0;
-        const radius = 250; // Donus yari capi
-        const speed = 0.5; // Donus hizi
+        // Ekrani Tam Kapla
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        function toggleSpin() {
-            if(isSpinning) {
-                // Kapat
-                clearInterval(spinTimer);
-                isSpinning = false;
-                btn.classList.remove('active');
-                btn.textContent = "SPIN BOT: KAPALI";
-                btn.style.background = "rgba(255,0,0,0.8)";
-            } else {
-                // Ac
-                isSpinning = true;
-                btn.classList.add('active');
-                btn.textContent = "SPIN BOT: AKTİF";
-                btn.style.background = "rgba(0,255,0,0.8)";
-                
-                // Oyuna odakla (Komut gitsin diye)
-                frame.focus();
+        // Oyuncu
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 25,
+            angle: 0,
+            speed: 4, // TV icin hiz optimize edildi
+            health: 100,
+            maxHealth: 100,
+            wood: 0,
+            stone: 0,
+            food: 0,
+            score: 0,
+            attacking: false,
+            weaponAngle: 0
+        };
 
-                // Hizli Dongu (60 FPS)
-                spinTimer = setInterval(() => {
-                    spinLogic();
-                }, 16);
+        // Dunya Nesneleri
+        const objects = []; // Agaclar, taslar
+        const enemies = []; // Botlar
+        const particles = []; // Efektler
+        const mapSize = 2000; // Harita buyuklugu
+
+        // Klavye Durumu (Kumanda Yon Tuslari)
+        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+        // Mouse Durumu (LG Sihirli Kumanda)
+        const mouse = { x: canvas.width/2, y: canvas.height/2, down: false };
+
+        // Kamera (Ekranin ortasinda oyuncu kalsin diye)
+        const camera = { x: 0, y: 0 };
+
+        // --- SISTEM FONKSIYONLARI ---
+
+        // Rastgele Sayi
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+
+        // Mesafe Hesapla
+        function getDist(x1, y1, x2, y2) { return Math.sqrt((x2-x1)**2 + (y2-y1)**2); }
+
+        // Daire Carpisma Kontrolu
+        function checkCol(c1, c2) {
+            const dist = getDist(c1.x, c1.y, c2.x, c2.y);
+            return dist < c1.radius + c2.radius;
+        }
+
+        // Harita Olustur
+        function initMap() {
+            // Agaclar (Yesil)
+            for(let i=0; i<30; i++) {
+                objects.push({
+                    id: Math.random(),
+                    type: 'tree',
+                    x: rand(-mapSize/2, mapSize/2),
+                    y: rand(-mapSize/2, mapSize/2),
+                    radius: rand(30, 50),
+                    health: 50,
+                    maxHealth: 50,
+                    color: '#2ecc71', // Yesil
+                    resource: 'wood'
+                });
+            }
+            // Taslar (Gri)
+            for(let i=0; i<20; i++) {
+                objects.push({
+                    id: Math.random(),
+                    type: 'rock',
+                    x: rand(-mapSize/2, mapSize/2),
+                    y: rand(-mapSize/2, mapSize/2),
+                    radius: rand(25, 45),
+                    health: 80,
+                    maxHealth: 80,
+                    color: '#95a5a6', // Gri
+                    resource: 'stone'
+                });
+            }
+            // Yemek (Kirmizi Cali)
+            for(let i=0; i<15; i++) {
+                objects.push({
+                    id: Math.random(),
+                    type: 'bush',
+                    x: rand(-mapSize/2, mapSize/2),
+                    y: rand(-mapSize/2, mapSize/2),
+                    radius: 20,
+                    health: 20,
+                    maxHealth: 20,
+                    color: '#e74c3c', // Kirmizi
+                    resource: 'food'
+                });
             }
         }
 
-        function spinLogic() {
-            // Matematiksel Donus Hesabi
-            angle += speed;
-            
-            // Ekranin ortasi
-            const cx = window.innerWidth / 2;
-            const cy = window.innerHeight / 2;
+        // Dusman Olustur (Moo Botlari)
+        function spawnEnemy() {
+            if(enemies.length < 5) {
+                // Oyuncudan uzakta dogur
+                let ex, ey, d;
+                do {
+                    ex = rand(-mapSize/2, mapSize/2);
+                    ey = rand(-mapSize/2, mapSize/2);
+                    d = getDist(ex, ey, player.x, player.y);
+                } while(d < 600); // 600px yakinda dogmasin
 
-            // Yeni koordinat
-            const x = cx + Math.cos(angle) * radius;
-            const y = cy + Math.sin(angle) * radius;
+                enemies.push({
+                    x: ex,
+                    y: ey,
+                    radius: 25,
+                    speed: 2.5, // Oyuncudan biraz yavas
+                    health: 60,
+                    maxHealth: 60,
+                    angle: 0,
+                    color: '#c0392b' // Koyu Kirmizi
+                });
+            }
+        }
 
-            // Mouse Event Olustur
-            // Bu event tarayiciya "Mouse buraya gitti" der.
-            const evt = new MouseEvent('mousemove', {
-                view: window,
-                bubbles: true,
-                cancelable: true,
-                clientX: x,
-                clientY: y,
-                screenX: x,
-                screenY: y
+        // Hasar Yazisi Goster
+        function showDamage(x, y, amount) {
+            const el = document.createElement('div');
+            el.className = 'damage-text';
+            el.style.left = (canvas.width/2 + (x - player.x)) + 'px';
+            el.style.top = (canvas.height/2 + (y - player.y)) + 'px';
+            el.textContent = "-" + amount;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        // --- GUNCELLEME DONGUSU (OYUN MANTIGI) ---
+        function update() {
+            if(player.health <= 0) return;
+
+            // 1. Oyuncu Hareketi (Yon Tuslari)
+            if(keys.ArrowUp) player.y -= player.speed;
+            if(keys.ArrowDown) player.y += player.speed;
+            if(keys.ArrowLeft) player.x -= player.speed;
+            if(keys.ArrowRight) player.x += player.speed;
+
+            // Harita Sinirlari
+            player.x = Math.max(-mapSize/2, Math.min(mapSize/2, player.x));
+            player.y = Math.max(-mapSize/2, Math.min(mapSize/2, player.y));
+
+            // 2. Oyuncu Donusu (Mouse/LG Kumanda)
+            // Mouse konumu ekrana gore oldugu icin, oyuncunun ekran ortasina gore acisini aliyoruz
+            const screenCx = canvas.width / 2;
+            const screenCy = canvas.height / 2;
+            player.angle = Math.atan2(mouse.y - screenCy, mouse.x - screenCx);
+
+            // 3. Saldiri Mantigi
+            if(mouse.down) {
+                // Silah savurma efekti
+                player.attacking = true;
+                player.weaponAngle += 0.4;
+                
+                // Vurus Animasyonu Bitti mi?
+                if(player.weaponAngle > Math.PI) {
+                    player.weaponAngle = 0;
+                    // Surekli basili tutarsa tekrar vurması icin bekleme suresi (Cooldown) yok, seri vurur.
+                }
+
+                // Vurus Aninda Hasar Kontrolu (Yarim turda vursun)
+                if(player.weaponAngle > 1 && player.weaponAngle < 2) {
+                    checkHit();
+                }
+            } else {
+                player.attacking = false;
+                player.weaponAngle = 0;
+            }
+
+            // 4. Kamera Pozisyonu (Oyuncuyu takip et)
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
+
+            // 5. Dusman Mantigi (Yapay Zeka)
+            spawnEnemy();
+            enemies.forEach((en, index) => {
+                // Oyuncuya don ve yuru
+                en.angle = Math.atan2(player.y - en.y, player.x - en.x);
+                en.x += Math.cos(en.angle) * en.speed;
+                en.y += Math.sin(en.angle) * en.speed;
+
+                // Oyuncuya carpti mi?
+                if(checkCol(player, en)) {
+                    // Oyuncuya hasar ver (Geri tepme)
+                    player.health -= 0.5;
+                    updateUI();
+                    
+                    // Geri tepme
+                    en.x -= Math.cos(en.angle) * 10;
+                    en.y -= Math.sin(en.angle) * 10;
+                }
             });
 
-            // Eventi iframe'e gonder
-            // Not: CORS korumasi yoksa calisir.
-            frame.dispatchEvent(evt);
-            
-            // Ayrica document'e de gonder (Bazi oyunlar document'i dinler)
-            document.dispatchEvent(evt);
+            // Olum Kontrolu
+            if(player.health <= 0) {
+                document.getElementById('death-screen').style.display = 'flex';
+                document.getElementById('final-score').innerText = player.score;
+            }
         }
 
-        // Kumanda ile butona kolay ulasmak icin 'Tab Index' destegi
-        // (Tarayici otomatik halleder ama yine de guvenlik onlemi)
-        btn.setAttribute('tabindex', '1');
+        // Vurus Kontrolu
+        function checkHit() {
+            // Silahin ucu (Tahmini)
+            const weaponX = player.x + Math.cos(player.angle) * 50;
+            const weaponY = player.y + Math.sin(player.angle) * 50;
 
-        // Enter tusu ile butonu tetikleme (Odak butondaysa)
-        btn.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter' || e.key === ' ') {
-                toggleSpin();
+            // Nesnelere vurdu mu?
+            objects.forEach((obj, i) => {
+                if(getDist(weaponX, weaponY, obj.x, obj.y) < obj.radius + 20) {
+                    obj.health -= 10;
+                    // Titreme efekti
+                    obj.x += Math.cos(player.angle) * 2;
+                    obj.y += Math.sin(player.angle) * 2;
+
+                    // Kaynak Topla
+                    if(obj.health <= 0) {
+                        if(obj.resource === 'wood') player.wood += 5;
+                        if(obj.resource === 'stone') player.stone += 5;
+                        if(obj.resource === 'food') { player.food += 5; player.health = Math.min(100, player.health + 10); }
+                        
+                        player.score += 10;
+                        showDamage(obj.x, obj.y, "+Resource");
+                        objects.splice(i, 1);
+                        updateUI();
+                        
+                        // Yerine yenisi dogsun (Uzun sure sonra)
+                        setTimeout(() => {
+                           // Basit respawn mantigi: yeniden nesne ekle
+                        }, 5000); 
+                    }
+                }
+            });
+
+            // Dusmana vurdu mu?
+            enemies.forEach((en, i) => {
+                 if(getDist(weaponX, weaponY, en.x, en.y) < en.radius + 30) {
+                     en.health -= 20;
+                     // Geri tepme
+                     en.x += Math.cos(player.angle) * 40;
+                     en.y += Math.sin(player.angle) * 40;
+                     showDamage(en.x, en.y, 20);
+
+                     if(en.health <= 0) {
+                         enemies.splice(i, 1);
+                         player.score += 100;
+                         updateUI();
+                     }
+                 }
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('wood-cnt').innerText = player.wood;
+            document.getElementById('stone-cnt').innerText = player.stone;
+            document.getElementById('food-cnt').innerText = player.food;
+            document.getElementById('score-cnt').innerText = player.score;
+            document.getElementById('health-bar').style.width = player.health + "%";
+        }
+
+        // --- CIZIM DONGUSU (RENDER) ---
+        function draw() {
+            // Ekrani Temizle
+            ctx.fillStyle = '#b6db66'; // Moomoo Cimen Rengi
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid (Izgara) Cizimi
+            ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            const gridSize = 100;
+            const startX = Math.floor(camera.x / gridSize) * gridSize;
+            const startY = Math.floor(camera.y / gridSize) * gridSize;
+            
+            for(let x = startX - gridSize; x < startX + canvas.width + gridSize; x += gridSize) {
+                ctx.moveTo(x - camera.x, 0);
+                ctx.lineTo(x - camera.x, canvas.height);
             }
+            for(let y = startY - gridSize; y < startY + canvas.height + gridSize; y += gridSize) {
+                ctx.moveTo(0, y - camera.y);
+                ctx.lineTo(canvas.width, y - camera.y);
+            }
+            ctx.stroke();
+
+            // Dunya Sinirlari (Kirmizi Cizgi)
+            ctx.strokeStyle = 'rgba(255,0,0,0.3)';
+            ctx.lineWidth = 5;
+            ctx.strokeRect(-mapSize/2 - camera.x, -mapSize/2 - camera.y, mapSize, mapSize);
+
+            // Nesneleri Ciz
+            objects.forEach(obj => {
+                // Ekranda degilse cizme (Optimizasyon)
+                if(obj.x - camera.x < -100 || obj.x - camera.x > canvas.width + 100) return;
+                if(obj.y - camera.y < -100 || obj.y - camera.y > canvas.height + 100) return;
+
+                ctx.fillStyle = obj.color;
+                ctx.beginPath();
+                ctx.arc(obj.x - camera.x, obj.y - camera.y, obj.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke(); // Kenarlik
+                
+                // Nesne cani azsa catlak goster (Basitce rengi koyulastir)
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.arc(obj.x - camera.x, obj.y - camera.y, obj.radius * (1 - obj.health/obj.maxHealth), 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Dusmanlari Ciz
+            enemies.forEach(en => {
+                ctx.save();
+                ctx.translate(en.x - camera.x, en.y - camera.y);
+                ctx.rotate(en.angle);
+
+                // Govde
+                ctx.fillStyle = en.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, en.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Eller (Saldirmasi icin)
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(20, 15, 8, 0, Math.PI*2); // Sag el
+                ctx.arc(20, -15, 8, 0, Math.PI*2); // Sol el
+                ctx.fill();
+
+                // Boynuz (Moo Bot oldugu belli olsun)
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(10, -10); ctx.lineTo(30, -25); ctx.lineTo(15, -5);
+                ctx.moveTo(10, 10); ctx.lineTo(30, 25); ctx.lineTo(15, 5);
+                ctx.fill();
+
+                // Can Bari
+                ctx.fillStyle = 'red';
+                ctx.fillRect(-20, -40, 40, 5);
+                ctx.fillStyle = '#0f0';
+                ctx.fillRect(-20, -40, 40 * (en.health/en.maxHealth), 5);
+
+                ctx.restore();
+            });
+
+            // OYUNCUYU CIZ
+            if(player.health > 0) {
+                ctx.save();
+                // Oyuncu her zaman ekranin ortasindadir
+                ctx.translate(canvas.width/2, canvas.height/2);
+                ctx.rotate(player.angle);
+
+                // Silah (Balta)
+                ctx.save();
+                // Vurus animasyonu icin silahi cevir
+                if(player.attacking) {
+                    ctx.rotate(player.weaponAngle);
+                }
+                // Balta sapi
+                ctx.fillStyle = '#8e44ad';
+                ctx.fillRect(20, -5, 40, 10);
+                // Balta ucu (Altin Balta)
+                ctx.fillStyle = '#f1c40f';
+                ctx.beginPath();
+                ctx.arc(60, 0, 15, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+
+                // Eller
+                ctx.fillStyle = '#333';
+                ctx.beginPath();
+                ctx.arc(20, 20, 10, 0, Math.PI*2); // Sag el
+                ctx.arc(20, -20, 10, 0, Math.PI*2); // Sol el
+                ctx.fill();
+
+                // Govde (Kafa)
+                ctx.fillStyle = '#fff'; // Ten rengi yerine beyaz (Moo karakteri)
+                ctx.beginPath();
+                ctx.arc(0, 0, player.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.restore();
+            }
+        }
+
+        // OYUN DONGUSU
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // --- INPUT DINLEYICILERI ---
+
+        // Klavye (Yon Tuslari)
+        window.addEventListener('keydown', e => {
+            if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
         });
+        window.addEventListener('keyup', e => {
+            if(keys.hasOwnProperty(e.key)) keys[e.key] = false;
+        });
+
+        // Mouse (LG Kumanda Imleci)
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+        window.addEventListener('mousedown', () => mouse.down = true);
+        window.addEventListener('mouseup', () => mouse.down = false);
+        
+        // Pencere Boyutu Degisirse
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        // BASLAT
+        initMap();
+        loop();
 
     </script>
 </body>
