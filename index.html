@@ -1,12 +1,10 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reis Portal - Animasyonlu Asistan</title>
+    <title>Reis Portal - Gemini API & CSS Animasyon</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <style>
         body { background-color: #0f172a; color: white; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
         
@@ -15,26 +13,55 @@
         .nav-btn { transition: all 0.3s; border: 2px solid transparent; }
         
         /* Iframe Alanı */
-        #content-frame { width: 100%; height: calc(100vh - 80px); border: none; display: none; }
+        #content-frame { width: 100%; height: calc(100vh - 80px); border: none; display: none; z-index: 10; }
         
-        /* Animasyonlu Stickman Konteyner */
+        /* --- CSS İLE ÇİZİLMİŞ VE CANLANDIRILMIŞ STICKMAN (TURUNCU) --- */
         #stickman-container { 
-            position: fixed; bottom: -20px; right: -20px; 
+            position: fixed; bottom: 50px; right: 50px; 
             z-index: 1000; cursor: pointer; 
-            width: 200px; height: 200px;
+            width: 100px; height: 150px;
             transition: transform 0.3s ease;
         }
-        #stickman-container:hover { transform: translateY(-10px); }
+        #stickman-container:hover { transform: scale(1.1) translateY(-10px); }
+
+        /* Stickman Parçaları (CSS Çizimi) */
+        .stickman-part { background-color: #ff6600; position: absolute; border-radius: 10px; }
         
-        /* Sohbet Baloncuğu */
+        /* Kafa (İçi Boşluklu) */
+        .head { 
+            width: 40px; height: 40px; border-radius: 50%; 
+            border: 5px solid #ff6600; background-color: transparent; 
+            top: 0; left: 30px; 
+            animation: headBob 2s infinite ease-in-out;
+        }
+        
+        /* Gövde */
+        .torso { width: 5px; height: 60px; top: 40px; left: 47.5px; }
+        
+        /* Kollar */
+        .arm { width: 5px; height: 50px; top: 45px; transform-origin: top center; }
+        .arm.left { left: 47.5px; transform: rotate(30deg); animation: armWaveLeft 2s infinite ease-in-out; }
+        .arm.right { left: 47.5px; transform: rotate(-30deg); animation: armWaveRight 2s infinite ease-in-out; }
+        
+        /* Bacaklar */
+        .leg { width: 5px; height: 55px; top: 95px; transform-origin: top center; }
+        .leg.left { left: 47.5px; transform: rotate(15deg); }
+        .leg.right { left: 47.5px; transform: rotate(-15deg); }
+
+        /* --- CSS ANİMASYONLARI --- */
+        @keyframes headBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        @keyframes armWaveLeft { 0%, 100% { transform: rotate(30deg); } 50% { transform: rotate(45deg); } }
+        @keyframes armWaveRight { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(-15deg); } }
+        
+        /* --- SOHBET ARAYÜZÜ --- */
         .bubble { 
-            position: absolute; bottom: 180px; right: 50px; background: white; color: #333;
+            position: absolute; bottom: 180px; right: 20px; background: white; color: #333;
             padding: 15px; border-radius: 20px; min-width: 180px; display: none;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5); font-weight: bold; z-index: 1001;
             font-size: 14px;
         }
         .bubble::after { /* Baloncuk oku */
-            content: ''; position: absolute; top: 100%; right: 30px;
+            content: ''; position: absolute; top: 100%; right: 40px;
             border-width: 10px; border-style: solid;
             border-color: white transparent transparent transparent;
         }
@@ -52,7 +79,7 @@
 </head>
 <body>
 
-    <nav id="top-nav" class="h-20 flex items-center justify-around bg-slate-800 px-5 border-b-2 border-orange-500">
+    <nav id="top-nav" class="h-20 flex items-center justify-around bg-slate-800 px-5 border-b-2 border-orange-500 z-20 relative">
         <button class="nav-btn p-3 px-6 rounded-lg bg-slate-700 font-bold text-sm" tabindex="1" onclick="openSite('https://www.google.com/search?q=film+izle')">🎬 Filmler</button>
         <button class="nav-btn p-3 px-6 rounded-lg bg-slate-700 font-bold text-sm" tabindex="2" onclick="openSite('https://www.youtube.com')">📺 YouTube</button>
         <button class="nav-btn p-3 px-6 rounded-lg bg-slate-700 font-bold text-sm" tabindex="3" onclick="openSite('https://www.asurascans.com')">📚 Mangalar</button>
@@ -61,7 +88,7 @@
 
     <div id="main-ui" class="flex flex-col items-center justify-center h-[80vh] p-5">
         <h1 class="text-4xl md:text-5xl font-extrabold text-orange-500 mb-8 text-center">HOŞ GELDİN REİS</h1>
-        <p class="text-slate-400 mb-10 text-center max-w-lg text-sm md:text-base">Televizyondan kumanda ile seçebilir veya animasyonlu Stickman'e tıklayıp yapay zeka ile konuşabilirsin.</p>
+        <p class="text-slate-400 mb-10 text-center max-w-lg text-sm md:text-base">Televizyondan kumanda ile seçebilir veya animasyonlu Stickman'e tıklayıp Gemini AI ile konuşabilirsin.</p>
         
         <div class="grid grid-cols-2 gap-6 w-full max-w-md">
             <div class="nav-btn p-8 bg-slate-800 rounded-2xl text-center cursor-pointer" tabindex="5" onclick="openSite('https://www.google.com')">
@@ -77,19 +104,17 @@
 
     <div id="stickman-container" onclick="toggleChat()">
         <div id="bubble" class="bubble">Selam reis! Bugün ne izliyoruz?</div>
-        <lottie-player 
-            src="https://assets10.lottiefiles.com/packages/lf20_5njpXv.json"  
-            background="transparent"  
-            speed="1"  
-            style="width: 100%; height: 100%;"  
-            loop  
-            autoplay>
-        </lottie-player>
+        <div class="head"></div>
+        <div class="stickman-part torso"></div>
+        <div class="stickman-part arm left"></div>
+        <div class="stickman-part arm right"></div>
+        <div class="stickman-part leg left"></div>
+        <div class="stickman-part leg right"></div>
     </div>
 
     <div id="chat-menu">
         <div class="flex justify-between items-center mb-4 border-b border-orange-500 pb-2">
-            <h2 class="text-xl font-bold text-orange-500">Reis Sohbet (Turuncu)</h2>
+            <h2 class="text-xl font-bold text-orange-500">Reis Sohbet (Gemini)</h2>
             <button class="text-slate-500 hover:text-white" onclick="toggleChat()">✕</button>
         </div>
         <div id="chat-history" class="h-64 overflow-y-auto mb-4 space-y-3 text-sm pr-2">
@@ -131,7 +156,7 @@
             }
         }
 
-        // Yapay Zekaya Soru Sor (GROQ API BAĞLANTISI)
+        // Yapay Zekaya Soru Sor (GEMINI API BAĞLANTISI)
         async function askAI() {
             const input = document.getElementById('ai-input');
             const history = document.getElementById('chat-history');
@@ -144,27 +169,25 @@
             history.scrollTop = history.scrollHeight;
 
             try {
-                // --- GERÇEK API ÇAĞRISI (GROQ) ---
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                // --- GERÇEK API ÇAĞRISI (GEMINI) ---
+                const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyB4tdz_KKFET5GxO4_M5VI8VEfhMdQDmmg", {
                     method: "POST",
                     headers: {
-                        "Authorization": "Bearer AIzaSyB4tdz_KKFET5GxO4_M5VI8VEfhMdQDmmg", // Senin API Key
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "llama3-8b-8192", // Hızlı ve zeki model
-                        messages: [
+                        contents: [
                             { 
-                                role: "system", 
-                                content: "Sen Alan Becker'ın turuncu çöp adamısın. Adın Turuncu. Kullanıcıya 'Reis' diye hitap et. Esprili, enerjik ve biraz yaramaz ol. Eğer kullanıcı bir site açmanı isterse cevabında mutlaka 'AÇILIYOR:' kelimesini ve sitenin URL'sini kullan." 
-                            },
-                            { role: "user", content: userText }
+                                parts: [{ 
+                                    text: `Sen Alan Becker'ın turuncu çöp adamısın. Adın Turuncu. Kullanıcıya 'Reis' diye hitap et. Esprili, enerjik ve biraz yaramaz ol. Eğer kullanıcı bir site açmanı isterse cevabında mutlaka 'AÇILIYOR:' kelimesini ve sitenin URL'sini kullan. Kullanıcının son mesajı: ${userText}` 
+                                }]
+                            }
                         ]
                     })
                 });
 
                 const data = await response.json();
-                const aiResponse = data.choices[0].message.content;
+                const aiResponse = data.candidates[0].content.parts[0].text;
 
                 // AI Cevabını Ekrana Bas
                 history.innerHTML += `<div class="bg-orange-900 p-3 rounded-lg text-left mr-10 mb-2"><b>Turuncu:</b> ${aiResponse}</div>`;
@@ -178,7 +201,8 @@
                 }
 
             } catch (error) {
-                history.innerHTML += `<div class="text-red-500 italic text-xs text-center p-2 bg-red-950 rounded mb-2">Hata: API anahtarı geçersiz veya bağlantı koptu reis.</div>`;
+                console.error("Gemini API Hatası:", error);
+                history.innerHTML += `<div class="text-red-500 italic text-xs text-center p-2 bg-red-950 rounded mb-2">Hata: Gemini API anahtarı geçersiz veya bağlantı koptu reis.</div>`;
             }
         }
 
