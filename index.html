@@ -3,103 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reis Portal v5 - Sınırsız</title>
+    <title>Reis Proxy Browser - Kilit Kırıcı</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #020617; color: white; }
-        #nav-bar { height: 60px; background: #1e293b; display: flex; align-items: center; padding: 0 15px; border-bottom: 2px solid #f97316; gap: 10px; z-index: 50; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #020617; }
+        #nav-bar { height: 60px; background: #1e293b; display: flex; align-items: center; padding: 0 15px; border-bottom: 3px solid #f97316; gap: 10px; z-index: 100; position: relative; }
         #url-bar { flex: 1; background: #0f172a; border: 1px solid #334155; color: white; padding: 10px 20px; border-radius: 99px; outline: none; }
-        .nav-btn { background: #f97316; color: white; padding: 8px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; border: none; }
-        #content-container { width: 100%; height: calc(100vh - 60px); position: relative; }
-        iframe { width: 100%; height: 100%; border: none; background: white; }
-        
-        /* AI PANELİ */
+        .nav-btn { background: #f97316; color: white; padding: 8px 15px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+        /* ANA EKRAN VE IFRAME */
+        #content-container { width: 100%; height: calc(100vh - 60px); position: relative; background: white; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* GİZLİ AI PANELİ */
         #ai-sidebar {
             position: fixed; right: -360px; top: 0; width: 350px; height: 100%;
-            background: #1e293b; border-left: 3px solid #f97316; transition: 0.4s ease-in-out;
+            background: #1e293b; border-left: 3px solid #f97316; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 200; display: flex; flex-direction: column; box-shadow: -10px 0 50px rgba(0,0,0,0.8);
         }
         #ai-sidebar.open { right: 0; }
         #ai-toggle {
             position: fixed; right: 0; top: 50%; transform: translateY(-50%);
             background: #f97316; color: white; padding: 20px 8px; border-radius: 15px 0 0 15px;
-            cursor: pointer; z-index: 150; font-weight: bold; writing-mode: vertical-rl; text-orientation: mixed;
+            cursor: pointer; z-index: 150; font-weight: bold; writing-mode: vertical-rl;
         }
-        #chat-flow { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 12px; border-radius: 15px; max-width: 85%; font-size: 14px; line-height: 1.5; }
-        .user-msg { background: #334155; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .ai-msg { background: #f97316; align-self: flex-start; border-bottom-left-radius: 2px; }
 
-        #home-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;
-        }
+        #chat-flow { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; color: white; }
+        .msg { padding: 12px; border-radius: 15px; max-width: 85%; font-size: 14px; }
+        .user-msg { background: #334155; align-self: flex-end; }
+        .ai-msg { background: #f97316; align-self: flex-start; }
     </style>
 </head>
 <body>
 
     <div id="nav-bar">
-        <button class="nav-btn" onclick="goHome()">🏠</button>
-        <input id="url-bar" type="text" placeholder="Site adresi yaz veya ara...">
-        <button class="nav-btn" onclick="browse()">GİT</button>
+        <button class="nav-btn" onclick="location.reload()">🏠</button>
+        <input id="url-bar" type="text" placeholder="Açılmayan siteyi buraya yaz reis (örn: google.com)...">
+        <button class="nav-btn" onclick="forceBrowse()">ZORLA AÇ</button>
     </div>
 
     <div id="content-container">
-        <div id="home-screen">
-            <h1 class="text-6xl font-black mb-4 tracking-tighter text-white">REİS <span class="text-orange-500">PORTAL</span></h1>
-            <p class="text-slate-400 mb-10 text-lg">Hafızalı Gemini ve Sınırsız Browser bir arada.</p>
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="quick('asurascans.com')" class="bg-slate-800 p-6 rounded-2xl hover:bg-orange-600 transition font-bold">📚 Manga Oku</button>
-                <button onclick="quick('google.com')" class="bg-slate-800 p-6 rounded-2xl hover:bg-blue-600 transition font-bold">🔍 Google Arama</button>
-            </div>
-        </div>
-        <iframe id="main-frame"></iframe>
+        <iframe id="main-frame" src="about:blank"></iframe>
     </div>
 
     <div id="ai-toggle" onclick="toggleAI()">YAPAY ZEKA</div>
 
     <div id="ai-sidebar">
-        <div class="p-5 bg-orange-600 font-bold text-lg flex justify-between items-center shadow-lg">
-            <span>Gemini Asistan</span>
-            <button onclick="toggleAI()" class="hover:rotate-90 transition">✕</button>
+        <div class="p-5 bg-orange-600 font-bold flex justify-between items-center">
+            <span>Gemini Hafızalı Asistan</span>
+            <button onclick="toggleAI()">✕</button>
         </div>
-        <div id="chat-flow">
-            <div class="msg ai-msg">Selam reis! Ben senin hafızalı asistanın. İstediğini sor, her şeyi hatırlarım.</div>
-        </div>
+        <div id="chat-flow"></div>
         <div class="p-4 bg-slate-900 border-t border-slate-700">
             <div class="flex gap-2">
-                <input id="chat-input" type="text" placeholder="Sorunu buraya patlat reis..." class="flex-1 bg-slate-800 p-3 rounded-xl text-white outline-none border border-slate-700 focus:border-orange-500">
-                <button onclick="askAI()" class="bg-orange-600 p-3 rounded-xl font-bold">🚀</button>
+                <input id="chat-input" type="text" placeholder="Sor reis..." class="flex-1 bg-slate-800 p-2 rounded text-white outline-none">
+                <button onclick="askAI()" class="bg-orange-600 p-2 rounded">🚀</button>
             </div>
         </div>
     </div>
 
     <script>
-        // SENİN GEMINI ANAHTARIN
         const API_KEY = "AIzaSyB4tdz_KKFET5GxO4_M5VI8VEfhMdQDmmg";
-        let history = []; // Konuşma hafızası
+        let history = [];
 
-        function browse() {
+        // --- ZORLA AÇMA MOTORU (PROXY) ---
+        function forceBrowse() {
             let val = document.getElementById('url-bar').value;
             if(!val) return;
-            if(val.includes("google.com") || val.includes("youtube.com")) {
-                alert("Reis, Google ve YouTube bu kutuda açılmaz. Yeni sekmede açıyorum.");
-                window.open(val.startsWith("http") ? val : "https://"+val, "_blank");
-                return;
-            }
-            if(!val.includes(".")) val = "https://www.google.com/search?q=" + encodeURIComponent(val);
-            else if(!val.startsWith("http")) val = "https://" + val;
+
+            if(!val.startsWith("http")) val = "https://" + val;
+
+            // REİSİN TAKTİĞİ: Siteyi CORS Proxy üzerinden çağırıyoruz.
+            // Bu link siteyi "paketleyip" iframe'e uygun hale getirir.
+            const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(val);
             
-            document.getElementById('home-screen').style.display = 'none';
-            document.getElementById('main-frame').src = val;
+            document.getElementById('main-frame').src = proxyUrl;
+            console.log("Proxy üzerinden yükleniyor: " + proxyUrl);
         }
 
-        function goHome() { document.getElementById('home-screen').style.display = 'flex'; document.getElementById('main-frame').src = ""; }
-        function quick(u) { document.getElementById('url-bar').value = u; browse(); }
         function toggleAI() { document.getElementById('ai-sidebar').classList.toggle('open'); }
 
-        // --- HAFIZALI VE ENGEL AŞAN GEMINI FONKSİYONU ---
         async function askAI() {
             const input = document.getElementById('chat-input');
             const flow = document.getElementById('chat-flow');
@@ -108,39 +91,26 @@
 
             flow.innerHTML += `<div class="msg user-msg">${txt}</div>`;
             input.value = "";
-            flow.scrollTop = flow.scrollHeight;
-            
             history.push({ role: "user", parts: [{ text: txt }] });
 
             try {
-                // Not: Eğer hala hata alırsan API_KEY'in Google Cloud'dan 'Gemini API' servisine açık olduğundan emin ol reis.
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-                
-                const res = await fetch(url, {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
                     body: JSON.stringify({ contents: history })
                 });
-
                 const data = await res.json();
-                
-                if(data.error) {
-                    throw new Error(data.error.message);
-                }
-
                 const reply = data.candidates[0].content.parts[0].text;
-                
                 flow.innerHTML += `<div class="msg ai-msg">${reply}</div>`;
                 history.push({ role: "model", parts: [{ text: reply }] });
                 flow.scrollTop = flow.scrollHeight;
             } catch(e) {
-                console.error(e);
-                flow.innerHTML += `<div class="msg ai-msg text-red-400"><b>Hata Reis:</b> Google doğrulama istiyor veya anahtar kısıtlı. Gemini API Key'ini 'Restrict Key' ayarlarından kontrol et.</div>`;
+                flow.innerHTML += `<div class="msg ai-msg">API hatası reis, Proxy bazen engelliyor olabilir.</div>`;
             }
         }
 
+        document.getElementById('url-bar').addEventListener('keypress', e => e.key === 'Enter' && forceBrowse());
         document.getElementById('chat-input').addEventListener('keypress', e => e.key === 'Enter' && askAI());
-        document.getElementById('url-bar').addEventListener('keypress', e => e.key === 'Enter' && browse());
     </script>
 </body>
 </html>
